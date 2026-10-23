@@ -34,32 +34,37 @@ checker:()=>tex(16,128,(g,w,h)=>{for(let x=0;x<2;x++)for(let y=0;y<16;y++){g.fil
 windows:(lit)=>tex(128,256,(g,w,h)=>{g.fillStyle='#8b919c';g.fillRect(0,0,w,h);for(let y=6;y<h-6;y+=14)for(let x=6;x<w-6;x+=14){const on=lit&&rnd()<.5;g.fillStyle=on?(rnd()<.5?'#ffd98a':'#bfe3ff'):'#2b3340';g.fillRect(x,y,8,9)}}),
 glow:()=>tex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,230,170,.95)');r.addColorStop(.4,'rgba(255,220,150,.35)');r.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=r;g.fillRect(0,0,w,h)})};
 
-// ---- trackside LED advertising: six Jumay banners (8:1) packed in one atlas for the wall boards,
-// plus three videotron screens that slide through the banners
+// ---- trackside advertising: six Jumay banners (8:1) in one atlas. The wall boards, the videotrons on posts and the bridge
+// screen all use one shader that slides from banner to banner (the next banner pushes the old one out to the left).
 const AD_FILES=['jumay.png','ad-internet.jpg','ad-tech.jpg','ad-audio.jpg','ad-shoes.jpg','ad-radio.jpg'];
 const AD_R=8,AW=768,AH=96,AD_N=AD_FILES.length,AD_PERIOD=7,adImgs=new Array(AD_N).fill(null);
 const adAtlas=document.createElement('canvas');adAtlas.width=AW*AD_N;adAtlas.height=AH;
-const adAtlasTex=new THREE.CanvasTexture(adAtlas);adAtlasTex.encoding=THREE.sRGBEncoding;adAtlasTex.anisotropy=aniso;
-// videotrons slide through the same atlas by scrolling the texture offset (no per-frame canvas redraw)
-// Screen textures are created only once every banner is loaded (a texture uploaded while its canvas is still empty stays black).
-const adScreens=[0,2,4].map(ph=>({t:null,ph,binds:[]}));let adReady=false;
-// A material that already exists is not reliably refreshed when its texture changes, so screens start with a plain dark
-// material and each mesh is given a brand-new textured material once every banner has loaded.
-const adDark=new THREE.MeshBasicMaterial({color:0x10131a});
-function adBind(m,i,col){const sc=adScreens[i];sc.binds.push([m,col]);m.material=sc.t?new THREE.MeshBasicMaterial({map:sc.t,color:col}):adDark}
-function adMakeScreens(){adScreens.forEach(sc=>{const t=new THREE.CanvasTexture(adAtlas);t.encoding=THREE.sRGBEncoding;t.anisotropy=aniso;t.wrapS=THREE.RepeatWrapping;t.repeat.set(1/AD_N,1);sc.t=t;sc.binds.forEach(([m,col])=>{m.material=new THREE.MeshBasicMaterial({map:t,color:col})})});adReady=true}
-function drawAtlas(){const g=adAtlas.getContext('2d');g.fillStyle='#10131a';g.fillRect(0,0,adAtlas.width,AH);adImgs.forEach((im,i)=>{if(im)g.drawImage(im,i*AW,0,AW,AH)});adAtlasTex.needsUpdate=true;if(!adReady&&adImgs.every(Boolean))adMakeScreens()}
+// The atlas texture is created only once every banner has loaded: a texture uploaded while its canvas is still empty stayed black.
+const adBlank=(()=>{const c=document.createElement('canvas');c.width=c.height=4;const g=c.getContext('2d');g.fillStyle='#10131a';g.fillRect(0,0,4,4);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t})();
+const adMapU={value:adBlank},adTimeU={value:0};let adReady=false;
+function drawAtlas(){const g=adAtlas.getContext('2d');g.fillStyle='#10131a';g.fillRect(0,0,adAtlas.width,AH);adImgs.forEach((im,i)=>{if(im)g.drawImage(im,i*AW,0,AW,AH)});
+ if(!adReady&&adImgs.every(Boolean)){const t=new THREE.CanvasTexture(adAtlas);t.encoding=THREE.sRGBEncoding;t.anisotropy=aniso;adMapU.value=t;adReady=true}}
 AD_FILES.forEach((f,i)=>{const im=new Image();im.onload=()=>{adImgs[i]=im;drawAtlas()};im.src=f});
-function adTick(t){if(!adReady)return;adScreens.forEach(s=>{const seq=Math.floor(t/AD_PERIOD)+s.ph,u=t%AD_PERIOD,tr=Math.min(1,u/.7),e=1-Math.pow(1-tr,3),pos=((seq-1+e)%AD_N+AD_N)%AD_N;s.t.offset.x=pos/AD_N})}
+function adTick(t){adTimeU.value=t}
+const AD_VS='attribute float aF,aB,aP;varying vec2 vUv;varying float vF,vB,vP;\n#include <fog_pars_vertex>\nvoid main(){vUv=uv;vF=aF;vB=aB;vP=aP;vec4 mvPosition=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}';
+const AD_FS='uniform sampler2D map;uniform float T;uniform vec3 tint;varying vec2 vUv;varying float vF,vB,vP;\n#include <fog_pars_fragment>\nvoid main(){'+
+ 'float t=T/'+AD_PERIOD.toFixed(1)+'+vP;float seq=floor(t);float u=(t-seq)*'+AD_PERIOD.toFixed(1)+';float tr=clamp(u/.7,0.,1.);float e=1.-pow(1.-tr,3.);'+
+ 'float g=vF+e;float idx=vB+seq;float x=g;if(g>=1.)x=g-1.;else idx-=1.;idx=mod(idx,'+AD_N.toFixed(1)+');'+
+ 'vec2 uv=vec2((idx+clamp(x,.004,.996))/'+AD_N.toFixed(1)+',vUv.y);gl_FragColor=vec4(texture2D(map,uv).rgb*tint,1.);\n#include <encodings_fragment>\n#include <fog_fragment>\n}';
+function adMaterial(tint){const u=THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{tint:{value:new THREE.Color(1,1,1)}}]);u.map=adMapU;u.T=adTimeU;u.tint.value.copy(tint);
+ return new THREE.ShaderMaterial({uniforms:u,vertexShader:AD_VS,fragmentShader:AD_FS,fog:true,side:THREE.DoubleSide})}
+// a flat screen: its u coordinate runs along the board; base banner and timing offset are constant per screen
+function adPlane(w,h,base,ph){const g=new THREE.PlaneGeometry(w,h),n=g.attributes.position.count,uv=g.attributes.uv,f=new Float32Array(n),b=new Float32Array(n).fill(base),p=new Float32Array(n).fill(ph);for(let i=0;i<n;i++)f[i]=uv.getX(i);
+ g.setAttribute('aF',new THREE.BufferAttribute(f,1));g.setAttribute('aB',new THREE.BufferAttribute(b,1));g.setAttribute('aP',new THREE.BufferAttribute(p,1));return g}
 // wall of LED boards: one long strip, banners of the right proportions placed one after another in a shuffled order
-function wallAd(off,y0,y1,i0,i1,flip,seed){const h=y1-y0,L=h*AD_R,pos=[],uv=[],idx=[],ord=[0,1,2,3,4,5];let r=seed||1;for(let i=ord.length-1;i>0;i--){r=(r*16807)%2147483647;const j=r%(i+1);[ord[i],ord[j]]=[ord[j],ord[i]]}
- const eps=.004;let d=0,vi=0;
- for(let j=0;j<i1-i0;j++){const k=((i0+j)%N+N)%N,k2=(k+1)%N,ds=Math.hypot(S[k2][0]-S[k][0],S[k2][1]-S[k][1]),c=Math.floor((d+ds/2)/L),b=ord[((c%AD_N)+AD_N)%AD_N];
+function wallAd(off,y0,y1,i0,i1,flip,seed){const h=y1-y0,L=h*AD_R,pos=[],uv=[],aF=[],aB=[],aP=[],idx=[],ord=[0,1,2,3,4,5];let r=seed||1;for(let i=ord.length-1;i>0;i--){r=(r*16807)%2147483647;const j=r%(i+1);[ord[i],ord[j]]=[ord[j],ord[i]]}
+ let d=0,vi=0;
+ for(let j=0;j<i1-i0;j++){const k=((i0+j)%N+N)%N,k2=(k+1)%N,ds=Math.hypot(S[k2][0]-S[k][0],S[k2][1]-S[k][1]),c=Math.floor((d+ds/2)/L),b=ord[((c%AD_N)+AD_N)%AD_N],ph=((c*0.37+(seed||0)*0.13)%1+1)%1;
   let f0=Math.min(1,Math.max(0,(d-c*L)/L)),f1=Math.min(1,Math.max(0,(d+ds-c*L)/L));if(flip){f0=1-f0;f1=1-f1}
-  const u0=(b+eps+f0*(1-2*eps))/AD_N,u1=(b+eps+f1*(1-2*eps))/AD_N;
   const x0=S[k][0]+NX[k]*off,z0=S[k][1]+NY[k]*off,x1=S[k2][0]+NX[k2]*off,z1=S[k2][1]+NY[k2]*off;
-  pos.push(x0,y0,z0,x0,y1,z0,x1,y0,z1,x1,y1,z1);uv.push(u0,0,u0,1,u1,0,u1,1);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4;d+=ds}
- const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
+  pos.push(x0,y0,z0,x0,y1,z0,x1,y0,z1,x1,y1,z1);uv.push(f0,0,f0,1,f1,0,f1,1);aF.push(f0,f0,f1,f1);aB.push(b,b,b,b);aP.push(ph,ph,ph,ph);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4;d+=ds}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ g.setAttribute('aF',new THREE.Float32BufferAttribute(aF,1));g.setAttribute('aB',new THREE.Float32BufferAttribute(aB,1));g.setAttribute('aP',new THREE.Float32BufferAttribute(aP,1));g.setIndex(idx);g.computeVertexNormals();return g}
 
 // ---- sky dome
 function skyMat(gm,top,hor,sunV,night){return new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:top},hor:{value:hor},sun:{value:sunV},night:{value:night},gm:{value:gm},time:{value:0}},
@@ -97,7 +102,6 @@ function dispose(o,keepMaps){o.traverse(q=>{if(q.geometry)q.geometry.dispose();i
 
 // ---- build the circuit
 function build3D(){
- adScreens.forEach(sc=>{sc.binds.length=0});
  if(world){scene.remove(world);dispose(world)}
  world=new THREE.Group();scene.add(world);
  nightMode=!!TRK.night;
@@ -153,7 +157,7 @@ function build3D(){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
   rlM=mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.62,depthWrite:false,...poly(-2,-6)}),{ro:2});world.add(rlM)}
  // barriers
- {const bM=new THREE.MeshBasicMaterial({map:adAtlasTex,side:THREE.DoubleSide,color:nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)}),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
+ {const bM=adMaterial(nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
   // LED boards on the walls: the image is mirrored on the right-hand side unless the length is negated
   for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wallAd(o,0,h,0,N,s>0,s>0?7:11),bM,{cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
  // catch fence above the barriers on open circuits
@@ -168,18 +172,28 @@ function build3D(){
   g.position.set(p[0],0,p[1]);g.rotation.y=-a;
   const beam=mesh(new THREE.BoxGeometry(1.2,ph+.8,half*2+3),dm,{cs:1});beam.position.set(0,9.2+ph/2,0);g.add(beam);
   for(const s of[-1,1]){const t=mesh(new THREE.BoxGeometry(1.6,9.2,1.6),dm,{cs:1});t.position.set(0,4.6,s*(half+.6));g.add(t)}
-  for(const f of[-1,1]){const pl=mesh(new THREE.PlaneGeometry(pw,ph),adDark);adBind(pl,1,ledCol);pl.position.set(f*.62,9.2+ph/2,0);pl.rotation.y=f*Math.PI/2;g.add(pl)}
+  for(const f of[-1,1]){const pl=mesh(adPlane(pw,ph,1,.15),adMaterial(ledCol));pl.position.set(f*.62,9.2+ph/2,0);pl.rotation.y=f*Math.PI/2;g.add(pl)}
   world.add(g)}
- // big videotron screens on posts, facing the track
- {const bw=24,bh=bw/AD_R,pl=new THREE.PlaneGeometry(bw,bh),back=new THREE.BoxGeometry(bw+.5,bh+.5,.3),post=new THREE.CylinderGeometry(.16,.16,6,8),
-   vcol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});let side=1;
-  let vn=0;const vstep=Math.max(24,Math.round(130/(D[N]/N)));
-  for(let i=30;i<N-30;i+=vstep){if(i>N-125||(TRK.tun&&i>TRK.tun[0]-25&&i<TRK.tun[1]+25))continue;side=-side;
-   const o=side*(HW+(WB>14?13:WB+2.4)),k=i,x=S[k][0]+NX[k]*o,z=S[k][1]+NY[k]*o,a=Math.atan2(S[k+1][1]-S[k-1][1],S[k+1][0]-S[k-1][0]),g=new THREE.Group();
-   g.position.set(x,0,z);g.rotation.y=-a+(side>0?Math.PI:0);
-   const bk=mesh(back,dk,{cs:1});bk.position.set(0,4.4,0);g.add(bk);const fc=mesh(pl,adDark);adBind(fc,(vn++)%3,vcol);fc.position.set(0,4.4,.17);g.add(fc);
-   for(const px of[-8,8]){const q=mesh(post,dk,{cs:1});q.position.set(px,3,-.1);g.add(q)}
-   world.add(g)}}
+ // big videotron screens on posts, facing the track. Each is placed only where its whole footprint is clear of the bridge,
+ // the start grandstands, the tunnel, other screens, the far side of the circuit and any tree or building.
+ {const bw=24,bh=bw/AD_R,back=new THREE.BoxGeometry(bw+.5,bh+.5,.3),post=new THREE.CylinderGeometry(.16,.16,6,8),
+   vcol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});
+  const avg=D[N]/N,vstep=Math.max(24,Math.round(130/avg)),dist=(ax,az,bx,bz)=>Math.hypot(ax-bx,az-bz),reach=HW+WB+(bw/2+6),bridge=S[170];
+  const placed=[];let want=-1,vn=0;
+  const clear=(i,sd)=>{const o=sd*(HW+(WB>14?13:WB+2.4)),x=S[i][0]+NX[i]*o,z=S[i][1]+NY[i]*o;
+   if(dist(x,z,bridge[0],bridge[1])<48)return null;
+   for(const q of placed)if(dist(x,z,q.x,q.z)<bw+10)return null;
+   // the far side of the circuit: any part of the track more than 150 samples away along the lap must stay out of the footprint
+   const far=Math.ceil(150/(avg/2));for(let j=0;j<N;j+=2){const dj=Math.min(Math.abs(j-i),N-Math.abs(j-i));if(dj<far)continue;if(dist(x,z,S[j][0],S[j][1])<reach)return null}
+   for(const t of TREES){const rr=TRK.bld?t[2]*1.2+16:t[2]+9;if(dist(x,z,t[0],t[1])<rr)return null}
+   return{x,z,o}};
+  for(let i=70;i<N-135;i+=4){if(TRK.tun&&i>TRK.tun[0]-30&&i<TRK.tun[1]+30)continue;if(placed.length&&i-placed[placed.length-1].k<vstep)continue;
+   for(const sd of[want,-want]){const c=clear(i,sd);if(!c)continue;const a=Math.atan2(S[i+1][1]-S[i-1][1],S[i+1][0]-S[i-1][0]),g=new THREE.Group();
+    g.position.set(c.x,0,c.z);g.rotation.y=-a+(sd>0?Math.PI:0);
+    const bk=mesh(back,dk,{cs:1});bk.position.set(0,4.4,0);g.add(bk);
+    const fc=mesh(adPlane(bw,bh,(vn*2)%AD_N,(vn*.31)%1),adMaterial(vcol));fc.position.set(0,4.4,.17);g.add(fc);vn++;
+    for(const px of[-8,8]){const q=mesh(post,dk,{cs:1});q.position.set(px,3,-.1);g.add(q)}
+    world.add(g);placed.push({x:c.x,z:c.z,k:i});want=-sd;break}}}
  // tunnel
  if(TRK.tun){const [a,b]=TRK.tun,cm=new THREE.MeshStandardMaterial({color:0x2b2e34,roughness:.9,side:THREE.DoubleSide}),lm=new THREE.MeshBasicMaterial({color:0xfff0c8});
   world.add(mesh(ribbon(-(HW+WB+.3),HW+WB+.3,7,16,a,b),cm));world.add(mesh(ribbon(-.5,.5,6.95,16,a,b),lm));

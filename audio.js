@@ -48,7 +48,18 @@ function start(){
  E.rmN=noiseSrc();E.rmF=bq('lowpass',140,.9);E.rmG=gn(0);E.rmN.connect(E.rmF);E.rmF.connect(E.rmG);E.rmG.connect(master);
  // brake disc hiss
  E.brN=noiseSrc();E.brF=bq('highpass',4200,.7);E.brG=gn(0);E.brN.connect(E.brF);E.brF.connect(E.brG);E.brG.connect(master);
+ loadEngine();
  return true}
+// Physical engine model in an AudioWorklet (engine-worklet.js). Until it has loaded, or if it cannot load, the oscillator stack above plays.
+function loadEngine(){
+ if(!ctx||!ctx.audioWorklet||!window.AudioWorkletNode)return;const c0=ctx;
+ c0.audioWorklet.addModule('engine-worklet.js').then(()=>{
+  if(ctx!==c0)return;
+  const wk=new AudioWorkletNode(c0,'f1-engine',{numberOfInputs:0,outputChannelCount:[1]});
+  E.wlp=bq('lowpass',6500,.7);E.wr1=bq('peaking',950,1.1,6);E.wr2=bq('peaking',2600,1.4,4);E.whp=bq('highpass',55,.7);E.wgain=gn(0);
+  wk.connect(E.wlp);E.wlp.connect(E.wr1);E.wr1.connect(E.wr2);E.wr2.connect(E.whp);E.whp.connect(E.wgain);E.wgain.connect(master);
+  E.wk=wk;E.wkReady=true;E.gain.gain.cancelScheduledValues(0);E.gain.gain.setTargetAtTime(0,c0.currentTime,.05);
+ }).catch(()=>{E.wkReady=false})}
 
 function setMuted(m){muted=!!m;if(ctx&&master)master.gain.setTargetAtTime(muted?0:.85,ctx.currentTime,.05)}
 function burst(freq,q,peak,dur,sweep){ // one-shot filtered noise (clicks, whooshes, pops)
@@ -77,7 +88,10 @@ function update(c,kmh,gear,st){
  E.res1.frequency.setTargetAtTime(900+rf*900,t,.08);E.res2.frequency.setTargetAtTime(2200+rf*1500,t,.08);
  E.og[3].gain.setTargetAtTime(.34*(1-rf*.5),t,.1);E.og[4].gain.setTargetAtTime(.1+.18*rf,t,.1);E.og[5].gain.setTargetAtTime(.04+.14*rf*thS,t,.1);
  const idle=st==='grid'?1:0;
- E.gain.gain.setTargetAtTime(on*(.26+.5*thS+.1*rf+.05*idle),t,.04);
+ if(E.wkReady){const P=E.wk.parameters;P.get('rpm').setTargetAtTime(rpmS,t,.03);P.get('thr').setTargetAtTime(thS,t,.04);
+  E.wgain.gain.setTargetAtTime(on*(.8+1.05*thS+.08*idle),t,.05);E.wlp.frequency.setTargetAtTime(3800+thS*2600+rf*1800,t,.08);
+  E.wr1.frequency.setTargetAtTime(800+rf*700,t,.1);E.wr2.frequency.setTargetAtTime(2200+rf*1500,t,.1);E.gain.gain.setTargetAtTime(0,t,.05)}
+ else E.gain.gain.setTargetAtTime(on*(.26+.5*thS+.1*rf+.05*idle),t,.04);
  // whine climbs with revs and load
  E.whine.frequency.setTargetAtTime(1800+rpmS*.35,t,.08);E.whine2.frequency.setTargetAtTime((1800+rpmS*.35)*2.02,t,.08);
  E.wg.gain.setTargetAtTime(on*(.012+.035*thS*rf),t,.08);
@@ -103,7 +117,12 @@ function update(c,kmh,gear,st){
 }
 
 // ---- other players' cars: panned, attenuated and Doppler-shifted voices
-function makeRemote(){const o1=osc('sawtooth',200),o2=osc('square',400),g1=gn(.5),g2=gn(.22),clip=ctx.createWaveShaper();clip.curve=shaperCurve(2);const lp=bq('lowpass',2200,.8),res=bq('peaking',1200,1.4,7),pan=ctx.createStereoPanner?ctx.createStereoPanner():null,out=gn(0);
+function makeRemote(){
+ const pan=ctx.createStereoPanner?ctx.createStereoPanner():null,out=gn(0);
+ if(E.wkReady){ // same physical model as the player's car, quieter and filtered by distance
+  const wk=new AudioWorkletNode(ctx,'f1-engine',{numberOfInputs:0,outputChannelCount:[1]}),lp=bq('lowpass',3200,.8),res=bq('peaking',1100,1.2,5);
+  wk.connect(lp);lp.connect(res);let last=res;if(pan){res.connect(pan);last=pan}last.connect(out);out.connect(master);return{wk,lp,pan,out,seen:0}}
+ const o1=osc('sawtooth',200),o2=osc('square',400),g1=gn(.5),g2=gn(.22),clip=ctx.createWaveShaper();clip.curve=shaperCurve(2);const lp=bq('lowpass',2200,.8),res=bq('peaking',1200,1.4,7);
  o1.connect(g1);o2.connect(g2);g1.connect(clip);g2.connect(clip);clip.connect(lp);lp.connect(res);let last=res;if(pan){res.connect(pan);last=pan}last.connect(out);out.connect(master);return{o1,o2,lp,pan,out,seen:0}}
 function remote(list){
  if(!ctx||ctx.state!=='running')return;const t=ctx.currentTime,me=window.car;if(!me)return;
@@ -112,13 +131,14 @@ function remote(list){
  for(const q of cand){const id=q.p.id;seen.add(id);let v=R.get(id);if(!v){v=makeRemote();R.set(id,v)}v.seen=t;
   const kmh=Math.hypot(q.p.vx,q.p.vy)*3.6,g=kmh<3?0:Math.min(8,Math.floor(kmh/40)+1),lo=(g-1)*40,hi=g==8?345:g*40,rf=g?clamp((kmh-lo)/(hi-lo),0,1):0,rpm=g?7500+5000*rf:4200+(q.p.th?5000:0);
   const dir=q.d>.5?[q.dx/q.d,q.dy/q.d]:[1,0],closing=((me.vx-q.p.vx)*dir[0]+(me.vy-q.p.vy)*dir[1]),dop=1+clamp(closing/SOS*.6,-.12,.12),f=rpm/60*3*dop;
-  v.o1.frequency.setTargetAtTime(f,t,.06);v.o2.frequency.setTargetAtTime(f*2.003,t,.06);
+  if(v.wk){v.wk.parameters.get('rpm').setTargetAtTime(rpm*dop,t,.06);v.wk.parameters.get('thr').setTargetAtTime(q.p.th?1:.15,t,.08)}
+  else{v.o1.frequency.setTargetAtTime(f,t,.06);v.o2.frequency.setTargetAtTime(f*2.003,t,.06)}
   v.lp.frequency.setTargetAtTime(clamp(3200-q.d*12,700,3200),t,.1);
   if(v.pan)v.pan.pan.setTargetAtTime(clamp((q.dx*rt[0]+q.dy*rt[1])/Math.max(q.d,6),-1,1),t,.08);
   v.out.gain.setTargetAtTime(muted?0:.34/Math.pow(1+q.d/22,1.5),t,.08)}
- R.forEach((v,id)=>{if(!seen.has(id)){v.out.gain.setTargetAtTime(0,t,.1);if(t-v.seen>.8){try{v.o1.stop();v.o2.stop();v.out.disconnect()}catch(e){}R.delete(id)}}})}
+ R.forEach((v,id)=>{if(!seen.has(id)){v.out.gain.setTargetAtTime(0,t,.1);if(t-v.seen>.8){try{if(v.wk){v.wk.disconnect()}else{v.o1.stop();v.o2.stop()}v.out.disconnect()}catch(e){}R.delete(id)}}})}
 
 // debug / verification helper: an analyser tapped at the master bus
 function probe(){if(!ctx)return null;if(!probeNode){probeNode=ctx.createAnalyser();probeNode.fftSize=8192;probeNode.smoothingTimeConstant=.6;comp.connect(probeNode)}return probeNode}
-window.AUD={start,update,remote,setMuted,probe,state:()=>ctx?ctx.state:'none',sampleRate:()=>ctx?ctx.sampleRate:0};
+window.AUD={start,update,remote,setMuted,probe,engine:()=>E.wkReady?'worklet':'oscillators',state:()=>ctx?ctx.state:'none',sampleRate:()=>ctx?ctx.sampleRate:0};
 })();
