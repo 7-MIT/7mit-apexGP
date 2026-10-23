@@ -34,6 +34,11 @@ checker:()=>tex(16,128,(g,w,h)=>{for(let x=0;x<2;x++)for(let y=0;y<16;y++){g.fil
 windows:(lit)=>tex(128,256,(g,w,h)=>{g.fillStyle='#8b919c';g.fillRect(0,0,w,h);for(let y=6;y<h-6;y+=14)for(let x=6;x<w-6;x+=14){const on=lit&&rnd()<.5;g.fillStyle=on?(rnd()<.5?'#ffd98a':'#bfe3ff'):'#2b3340';g.fillRect(x,y,8,9)}}),
 glow:()=>tex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,230,170,.95)');r.addColorStop(.4,'rgba(255,220,150,.35)');r.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=r;g.fillRect(0,0,w,h)})};
 
+// ---- trackside LED advertising (Jumay banner, 1568x196 = 8:1)
+const adTex=new THREE.Texture();adTex.encoding=THREE.sRGBEncoding;adTex.wrapS=THREE.RepeatWrapping;adTex.anisotropy=aniso;
+{const im=new Image();im.onload=()=>{adTex.image=im;adTex.needsUpdate=true};im.src='jumay.png'}
+const AD_R=8;
+
 // ---- sky dome
 function skyMat(gm,top,hor,sunV,night){return new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:top},hor:{value:hor},sun:{value:sunV},night:{value:night},gm:{value:gm}},
 vertexShader:'varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -115,8 +120,18 @@ function build3D(){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
   rlM=mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.62,depthWrite:false,...poly(-2,-6)}),{ro:2});world.add(rlM)}
  // barriers
- {const bT=mk.barrier(),bM=new THREE.MeshStandardMaterial({map:bT,roughness:.6,side:THREE.DoubleSide,color:nightMode?0x8a93b0:0xffffff}),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
-  for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wall(o,0,h,12,0,N),bM,{rs:1,cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
+ {const bM=new THREE.MeshBasicMaterial({map:adTex,side:THREE.DoubleSide,color:nightMode?0xffffff:0xeaeaea}),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
+  // LED boards on the walls: the image is mirrored on the right-hand side unless the length is negated
+  for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wall(o,0,h,s>0?-h*AD_R:h*AD_R,0,N),bM,{cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
+ // big videotron screens on posts, facing the track
+ {const bw=24,bh=bw/AD_R,pl=new THREE.PlaneGeometry(bw,bh),back=new THREE.BoxGeometry(bw+.5,bh+.5,.3),post=new THREE.CylinderGeometry(.16,.16,6,8),
+   fm=new THREE.MeshBasicMaterial({map:adTex,color:nightMode?0xffffff:0xf2f2f2}),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});let side=1;
+  for(let i=30;i<N-30;i+=48){if(i>N-125||(TRK.tun&&i>TRK.tun[0]-25&&i<TRK.tun[1]+25))continue;side=-side;
+   const o=side*(HW+(WB>14?13:WB+2.4)),k=i,x=S[k][0]+NX[k]*o,z=S[k][1]+NY[k]*o,a=Math.atan2(S[k+1][1]-S[k-1][1],S[k+1][0]-S[k-1][0]),g=new THREE.Group();
+   g.position.set(x,0,z);g.rotation.y=-a+(side>0?Math.PI:0);
+   const bk=mesh(back,dk,{cs:1});bk.position.set(0,4.4,0);g.add(bk);const fc=mesh(pl,fm);fc.position.set(0,4.4,.17);g.add(fc);
+   for(const px of[-8,8]){const q=mesh(post,dk,{cs:1});q.position.set(px,3,-.1);g.add(q)}
+   world.add(g)}}
  // tunnel
  if(TRK.tun){const [a,b]=TRK.tun,cm=new THREE.MeshStandardMaterial({color:0x2b2e34,roughness:.9,side:THREE.DoubleSide}),lm=new THREE.MeshBasicMaterial({color:0xfff0c8});
   world.add(mesh(ribbon(-(HW+WB+.3),HW+WB+.3,7,16,a,b),cm));world.add(mesh(ribbon(-.5,.5,6.95,16,a,b),lm));
