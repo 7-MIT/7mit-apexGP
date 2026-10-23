@@ -27,6 +27,23 @@ body.tv #tim,body.tv #spd,body.tv #mpb{display:none!important}
 .br .gp{margin-left:auto;font-family:"Courier New",monospace;font-size:12px}
 .br .ty{width:9px;height:9px;border-radius:50%;border:2px solid #fff;flex:none}
 .br.out{opacity:0}
+.pw{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(10,12,18,.9);font-size:9px;letter-spacing:.1em;color:#aab3c2;font-weight:700;margin-top:2px;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)}.pw svg{width:16px;height:9px}.pw b{color:#fff}
+/* opening title card */
+#splash{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#10306a,#060a16 70%);color:#fff;text-align:center;cursor:pointer;transition:opacity .6s}
+#splash *{animation-play-state:paused!important}#splash.play *{animation-play-state:running!important}#splash.out{opacity:0}
+#splash .in{display:flex;flex-direction:column;align-items:center;gap:10px}
+#splash svg{width:84px;height:46px;animation:spUp .9s .1s both}
+#splash .jm{font:900 clamp(30px,7vw,64px)/1 "Trebuchet MS",sans-serif;letter-spacing:.02em;animation:spUp .9s .3s both}
+#splash .jm sup{font-size:.35em;vertical-align:top;margin-left:2px}
+#splash .co{font:700 clamp(11px,2.4vw,16px) "Trebuchet MS",sans-serif;letter-spacing:.5em;color:#7cc4ff;animation:spUp .9s .5s both}
+#splash .pr{margin-top:22px;font:600 13px "Trebuchet MS",sans-serif;letter-spacing:.3em;color:#98a0ad;animation:spUp .8s 1.5s both}
+#splash .ap{font:900 clamp(40px,10vw,92px)/1 "Trebuchet MS",sans-serif;letter-spacing:-.02em;font-style:italic;animation:spSlam .7s 1.9s cubic-bezier(.2,1.4,.3,1) both}.ap b{color:#e10600}
+#splash .ln{height:4px;width:0;background:linear-gradient(90deg,#e10600,#ffd21f);animation:spLine 1.2s 2.3s ease-out forwards}
+#splash.gone{display:none}
+@keyframes spUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes spSlam{from{opacity:0;transform:scale(2.2) skewX(-10deg)}to{opacity:1;transform:skewX(-10deg)}}
+@keyframes spLine{to{width:min(60vw,420px)}}
+
 /* banners */
 .bb{position:absolute;opacity:0;transition:transform .55s cubic-bezier(.2,.9,.2,1),opacity .35s}
 #bsb{right:calc(10px + env(safe-area-inset-right,0px));top:42%;width:240px;transform:translateX(120%)}
@@ -76,7 +93,7 @@ body.cock #btel{display:none}
 const sty=document.createElement('style');sty.textContent=css;document.head.appendChild(sty);
 
 const root=document.createElement('div');root.id='bc';
-root.innerHTML='<div id="bt"><div class="bh"><b class="lg">APEX<i>GP</i></b><span id="bcn"></span><span id="blap">LAP 1</span></div><div id="bsec"><i></i><i></i><i></i></div><div id="brows"></div></div>'+
+root.innerHTML='<div id="bt"><div class="bh"><b class="lg">APEX<i>GP</i></b><span id="bcn"></span><span id="blap">LAP 1</span></div><div id="bsec"><i></i><i></i><i></i></div><div id="brows"></div><div class="pw"><svg viewBox="0 0 26 14"><path d="M0 14 8 3l4 5 5-8 9 14z" fill="#4db8ff"/></svg><span>POWERED BY <b>JUMAY\u2122 CORPORATION</b></span></div></div>'+
 '<div id="bfeed"></div><div class="bb" id="bsb"></div><div class="bb" id="blt"></div><div class="bb" id="bdr"></div>'+
 '<div id="btel"><div class="tg"><small>GEAR</small><b id="tgr">N</b></div><div class="ts"><small>KM/H</small><b id="tsp">0</b></div>'+
 '<div class="tb"><div class="bar th"><i id="tth"></i></div><div class="bar br"><i id="tbr"></i></div></div>'+
@@ -84,6 +101,11 @@ root.innerHTML='<div id="bt"><div class="bh"><b class="lg">APEX<i>GP</i></b><spa
 document.body.appendChild(root);
 const $$=id=>document.getElementById(id),ROW=26;
 
+// ---- opening title card (once per browser session)
+{let seen=false;try{seen=sessionStorage.getItem('apexgp_splash')==='1';sessionStorage.setItem('apexgp_splash','1')}catch(e){}
+ if(!seen){const sp=document.createElement('div');sp.id='splash';sp.innerHTML='<div class="in"><svg viewBox="0 0 26 14"><path d="M0 14 8 3l4 5 5-8 9 14z" fill="#4db8ff"/></svg><div class="jm">Jumay<sup>\u2122</sup></div><div class="co">CORPORATION</div><div class="pr">PRESENTS</div><div class="ap">APEX <b>GP</b></div><div class="ln"></div></div>';
+  let fin=false;const done=()=>{if(fin)return;fin=true;sp.classList.add('out');setTimeout(()=>sp.classList.add('gone'),650)};sp.addEventListener('pointerdown',done);addEventListener('keydown',done,{once:true});document.body.appendChild(sp);
+  const go=()=>{sp.classList.add('play');setTimeout(done,4200)};document.readyState==='complete'?go():addEventListener('load',go,{once:true})}}
 // ---- helpers
 const code=n=>(String(n||'').replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()||'DRV');
 const teamBy=n=>TEAMS.find(t=>t.n===n);
@@ -101,7 +123,7 @@ window.BC={
   show($$('blt'),'<div class="bbx '+(pb?'pur':'yel')+'"><small>'+(pb?'NEW RECORD':'LAP TIME')+'</small><span class="big">'+esc(fmt(lt))+'</span>'+(has?'<span class="dl">'+sgn(lt-prev)+'</span>':'')+'</div>',4800)},
  deleted(){show($$('blt'),'<div class="bbx red"><small>TRACK LIMITS</small><span class="big">LAP DELETED</span></div>',3200)},
  begin(){sessBest=sessBest;const tm=(window.MP&&MP.isOn&&MP.isOn()?myName():'Driver');
-  show($$('bdr'),'<div class="bd"><div class="cl" style="background:'+esc(T.c1)+'"></div><div class="tx"><div class="nm">'+esc(tm)+'</div><div class="tm"><b>'+esc(T.n)+'</b> · '+esc(TCS[TCi].n)+' tyres</div><div class="tm">'+esc(TRK.name)+' · Time attack</div></div></div><div class="sw"></div>',5200)},
+  show($$('bdr'),'<div class="bd"><div class="cl" style="background:'+esc(T.c1)+'"></div><div class="tx"><div class="nm">'+esc(tm)+'</div><div class="tm"><b>'+esc(T.n)+'</b> · '+esc(TCS[TCi].n)+' tyres</div><div class="tm">'+esc(TRK.name)+' · Time attack</div><div class="tm">Powered by <b>Jumay\u2122 Corporation</b></div></div></div><div class="sw"></div>',5200)},
  feed(t){const f=$$('bfeed');f.textContent='◆ '+t;f.style.setProperty('--ty',(document.getElementById('brows').offsetHeight+80)+'px');f.style.opacity=1;clearTimeout(f._t);f._t=setTimeout(()=>f.style.opacity=0,5000)},
  toggle(){const on=!document.body.classList.contains('tv');set(on)}
 };

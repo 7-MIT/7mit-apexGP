@@ -1,6 +1,8 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Apex GP – F1 Time Attack</title>
+<title>Apex GP – F1 Time Attack | Jumay™ Corporation</title>
+<meta name="description" content="Apex GP, a 3D F1 time attack game with online ghost racing. Powered and organised by Jumay™ Corporation.">
+<meta property="og:title" content="Apex GP – powered by Jumay™ Corporation">
 <style>
 :root{--bg:#101318;--fg:#f4f5f7;--mut:#98a0ad;--pan:rgba(12,14,19,.74);--red:#e10600;--grn:#2ee66b;--yel:#ffd21f;color-scheme:dark}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -44,6 +46,7 @@ details.pn{margin:10px 0;border:1px solid #2b303b;border-radius:6px;background:#
 #mpl{color:var(--mut);font-weight:500}#mpl li{margin-left:20px}#mps{font-weight:600;font-size:12px;color:var(--mut);margin-left:8px}
 .row input[type=text]{background:#191d26;color:var(--fg);border:2px solid #2b303b;border-radius:5px;padding:5px 8px;font:inherit;width:170px}
 #mpc{padding:7px 16px;border-radius:5px;border:0;background:#127a36;color:#fff;font:700 13px "Trebuchet MS",sans-serif;cursor:pointer}
+.by{display:flex;align-items:center;gap:8px;margin:4px 0 2px;color:var(--mut);font-weight:600;font-size:13px;letter-spacing:.02em}.by b{color:var(--fg)}.by svg{width:26px;height:14px;flex:none}
 .note{color:var(--mut);font-weight:500;font-size:12px;margin-top:4px}.gd li{margin:4px 0 4px 20px;font-weight:500;color:var(--mut)}.gd b{color:var(--fg)}
 #menu{position:fixed;inset:0;background:linear-gradient(180deg,#0d0f14ee,#171b24f2);overflow:auto;touch-action:pan-y;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 28px}
 .w{max-width:760px;margin:0 auto}
@@ -71,6 +74,7 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <div id="ctl"><button class="b" data-k="L">◀</button><button class="b" data-k="R">▶</button><button class="b" data-k="B">BRAKE</button><button class="b" data-k="G">GAS</button><button class="b" data-k="D">DRS</button><button class="b" data-k="O">ERS</button></div>
 <div id="menu"><div class="w">
 <h1>Apex <b>GP</b></h1>
+<p class="by"><svg viewBox="0 0 26 14" aria-hidden="true"><path d="M0 14 8 3l4 5 5-8 9 14z" fill="#4db8ff"/></svg><span>Powered &amp; organised by <b>Jumay&trade; Corporation</b></span></p>
 <p class="sub">Time attack. Pick a car, set a lap time, beat your record. Stay inside the white line: a lap with all four wheels off the track is deleted.</p>
 <div id="tracks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:10px"></div><div id="teams"></div><div id="tyres" style="display:flex;gap:8px;margin-top:8px"></div>
 
@@ -107,7 +111,7 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 </details>
 <button id="go">Start session</button>
 <h3 id="rh" style="margin-bottom:4px">Lap records</h3><ol id="rec"></ol>
-<p class="help">Keyboard: arrows or WASD to drive, Space to brake, R to restart, C to change camera, L to show or hide the racing line (red = brake, yellow = lift, green = full throttle), E opens DRS in the green-marked zones, Esc for menu. Phone: use the on-screen buttons (landscape works best).<br>Tracks are original layouts inspired by famous circuits, not accurate copies (this one is about <span id="len"></span> km). Team names and colours follow the 2026 grid, but handling and speeds are a simplified simulation, not official data.</p>
+<p class="help">Keyboard: arrows or WASD to drive, Space to brake, R to restart, C to change camera, L to show or hide the racing line (red = brake, yellow = lift, green = full throttle), E opens DRS in the green-marked zones, Esc for menu. Phone: use the on-screen buttons (landscape works best).<br>Apex GP is powered and organised by Jumay&trade; Corporation. Tracks are original layouts inspired by famous circuits, not accurate copies (this one is about <span id="len"></span> km). Team names and colours follow the 2026 grid, but handling and speeds are a simplified simulation, not official data.</p>
 </div></div>
 <script src="three.min.js"></script>
 <script src="supabase.js"></script>
@@ -186,12 +190,12 @@ b.addEventListener('pointerdown',e=>{e.preventDefault();K[k]=1;b.classList.add('
 b.addEventListener('contextmenu',e=>e.preventDefault())});
 
 // ---- settings
-const SDEF={tc:1,abs:1,steer:1,wear:1,ers:1,shk:.3,lta:.3,fovm:0,sw:71,sd:80,rl:1};let SET=Object.assign({},SDEF);
+const SDEF={tc:1,abs:1,steer:1,wear:1,ers:1,shk:.3,lta:.3,fovm:0,sw:71,sd:80,rl:1,gfx:matchMedia('(pointer:coarse)').matches?0:1};let SET=Object.assign({},SDEF);
 try{Object.assign(SET,JSON.parse(localStorage.getItem('apexgp_set')||'{}'))}catch(e){}
 const saveSet=()=>{try{localStorage.setItem('apexgp_set',JSON.stringify(SET))}catch(e){}};
 const PRESETS={Arcade:{tc:1,abs:1,steer:1,wear:0,ers:1,rl:1},Realistic:{tc:0,abs:0,steer:1,wear:1,ers:1,rl:0},'Pro (GP weekend)':{tc:0,abs:0,steer:.8,wear:3,ers:1,rl:0}};
 const SROWS=[['tc','Traction control',[['Off',0],['On',1]]],['abs','ABS',[['Off',0],['On',1]]],['rl','Racing line',[['Off',0],['On',1]]],
-['steer','Steering response',[['Soft',.8],['Normal',1],['Sharp',1.25]]],['wear','Tyre wear',[['Off',0],['Realistic',1],['3x',3]]],['ers','ERS',[['Off',0],['On',1]]]];
+['steer','Steering response',[['Soft',.8],['Normal',1],['Sharp',1.25]]],['wear','Tyre wear',[['Off',0],['Realistic',1],['3x',3]]],['ers','ERS',[['Off',0],['On',1]]],['gfx','Graphics',[['Standard',0],['Cinematic',1]]]];
 function segs(box,opts,get,set){box.innerHTML='';opts.forEach(([n,v])=>{const b=document.createElement('button');b.textContent=n;b.className=get()==v?'sel':'';b.onclick=()=>{set(v);[...box.children].forEach(x=>x.classList.remove('sel'));b.classList.add('sel')};box.appendChild(b)})}
 function fovDeg(){return 2*Math.atan(SET.sw/(2*SET.sd))*180/Math.PI}
 function syncSet(){RL=!!SET.rl;
