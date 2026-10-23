@@ -175,14 +175,13 @@ window.build3D=build3D;
 
 // ---- the F1 car
 function rod(p0,p1,r,m){const a=V3(...p0),b=V3(...p1),d=b.clone().sub(a),g=new THREE.CylinderGeometry(r,r,d.length(),8),q=new THREE.Mesh(g,m);q.position.copy(a.clone().add(b).multiplyScalar(.5));q.quaternion.setFromUnitVectors(V3(0,1,0),d.normalize());q.castShadow=true;return q}
-function buildCar(){
- if(carG){scene.remove(carG);dispose(carG)}
- carG=new THREE.Group();carG.rotation.order='YZX';
- const paint=new THREE.MeshPhysicalMaterial({color:C(T.c1),metalness:.45,roughness:.32,clearcoat:1,clearcoatRoughness:.08,envMap:envTex,envMapIntensity:1.2}),
-  acc=new THREE.MeshPhysicalMaterial({color:C(T.c2),metalness:.35,roughness:.38,clearcoat:.8,envMap:envTex}),
+function makeCar(team,tci,mine){
+ const carG=new THREE.Group();carG.rotation.order='YZX';let helmet,halo,flap,brakeMat,dispC,dispT,wheelG,wheelRot,headL;
+ const paint=new THREE.MeshPhysicalMaterial({color:C(team.c1),metalness:.45,roughness:.32,clearcoat:1,clearcoatRoughness:.08,envMap:envTex,envMapIntensity:1.2}),
+  acc=new THREE.MeshPhysicalMaterial({color:C(team.c2),metalness:.35,roughness:.38,clearcoat:.8,envMap:envTex}),
   carbon=new THREE.MeshStandardMaterial({color:0x14151a,metalness:.4,roughness:.5,envMap:envTex,envMapIntensity:.8}),
   tyre=new THREE.MeshStandardMaterial({color:0x0e0e10,roughness:.92}),rimM=new THREE.MeshStandardMaterial({color:0x9aa0aa,metalness:.9,roughness:.3,envMap:envTex}),
-  band=new THREE.MeshBasicMaterial({color:C(TCS[TCi].c),side:THREE.DoubleSide});
+  band=new THREE.MeshBasicMaterial({color:C(TCS[tci].c),side:THREE.DoubleSide});
  brakeMat=new THREE.MeshStandardMaterial({color:0x550000,emissive:0xff1010,emissiveIntensity:.3});
  const add=(g,m,x,y,z,o)=>{const q=new THREE.Mesh(g,m);q.position.set(x,y,z);q.castShadow=true;q.receiveShadow=true;if(o&&o.r)q.rotation.set(...o.r);carG.add(q);return q},B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
  add(B(4.4,.06,1.5),carbon,-.1,.12,0);
@@ -202,7 +201,7 @@ function buildCar(){
  flap=new THREE.Group();flap.position.set(-2.95,.98,0);flap.add(new THREE.Mesh(B(.3,.04,1.1),acc));flap.children[0].position.x=.1;flap.children[0].castShadow=true;carG.add(flap);
  add(B(.1,.14,.3),brakeMat,-3.08,.46,0);
  // wheels
- wheelsF=[];wheelsR=[];spinF=[];spinR=[];const R=.36;
+ const wheelsF=[],wheelsR=[],spinF=[],spinR=[],R=.36;
  for(const[x,z,w,fr]of[[1.5,-.92,.34,1],[1.5,.92,.34,1],[-1.7,-.92,.44,0],[-1.7,.92,.44,0]]){
   const piv=new THREE.Group(),spin=new THREE.Group();piv.position.set(x,R,z);
   const t=new THREE.CylinderGeometry(R,R,w,32);t.rotateX(Math.PI/2);const tm=new THREE.Mesh(t,tyre);tm.castShadow=true;spin.add(tm);
@@ -211,13 +210,19 @@ function buildCar(){
   for(let k=0;k<5;k++){const sp=new THREE.Mesh(B(.05,R*1.1,.02),carbon);sp.rotation.z=k/5*Math.PI*2;sp.position.z=(z>0?1:-1)*(w/2+.006);spin.add(sp)}
   piv.add(spin);carG.add(piv);(fr?wheelsF:wheelsR).push(piv);(fr?spinF:spinR).push(spin);
   const sgn=z>0?1:-1;carG.add(rod([x,R,sgn*.52],[x+.3,.3,sgn*.22],.025,carbon));carG.add(rod([x,R+.1,sgn*.52],[x-.35,.42,sgn*.25],.025,carbon))}
- // steering wheel with display (cockpit)
+
+ if(mine){// steering wheel with display (cockpit)
  wheelG=new THREE.Group();wheelG.position.set(.7,.8,0);wheelG.rotation.z=.6;wheelRot=new THREE.Group();wheelG.add(wheelRot);
  {const bm=new THREE.MeshStandardMaterial({color:0x101114,roughness:.6}),body=new THREE.Mesh(B(.035,.1,.3),bm);wheelRot.add(body);for(const s of[-1,1]){const g=new THREE.Mesh(B(.05,.2,.05),bm);g.position.set(0,-.01,s*.17);wheelRot.add(g)}
   dispC=document.createElement('canvas');dispC.width=256;dispC.height=96;dispT=new THREE.CanvasTexture(dispC);dispT.encoding=THREE.sRGBEncoding;
   const dp=new THREE.Mesh(new THREE.PlaneGeometry(.26,.0975),new THREE.MeshBasicMaterial({map:dispT}));dp.position.set(-.02,.015,0);dp.rotation.y=-Math.PI/2;wheelRot.add(dp)}
  carG.add(wheelG);
- headL=new THREE.SpotLight(0xfff2d8,nightMode?3:0,140,.55,.6,1);headL.position.set(2.2,.5,0);headL.target.position.set(30,0,0);carG.add(headL,headL.target);
+ headL=new THREE.SpotLight(0xfff2d8,nightMode?3:0,140,.55,.6,1);headL.position.set(2.2,.5,0);headL.target.position.set(30,0,0);carG.add(headL,headL.target)}
+ return{g:carG,helmet,halo,flap,brakeMat,wheelsF,wheelsR,spinF,spinR,wheelG,wheelRot,dispC,dispT,headL}
+}
+function buildCar(){
+ if(carG){scene.remove(carG);dispose(carG)}
+ ({g:carG,helmet,halo,flap,brakeMat,wheelsF,wheelsR,spinF,spinR,wheelG,wheelRot,dispC,dispT,headL}=makeCar(T,TCi,true));
  scene.add(carG);carKey=T.n+'|'+TCi+'|'+(nightMode?1:0);
 }
 
@@ -229,12 +234,25 @@ function updDisp(c,kmh){if(!dispC)return;const g=dispC.getContext('2d'),w=256,h=
  g.fillStyle='#3aa0ff';g.fillRect(8,76,(SET.ers?c.er:0)*100,8);g.strokeStyle='#445';g.strokeRect(8,76,100,8);g.fillStyle=c.drs?'#2ee66b':'#445';g.font='700 14px sans-serif';g.fillText('DRS',124,84);
  g.fillStyle='#fff';g.font='700 16px "Courier New",monospace';g.textAlign='right';g.fillText($('ct').textContent,w-8,88);g.textAlign='left';dispT.needsUpdate=true}
 
+// ---- other players' cars (driven by multiplayer.js)
+const remote=new Map();
+function nameTag(txt){const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');g.fillStyle='rgba(8,10,16,.72)';g.fillRect(0,8,256,48);g.fillStyle='#fff';g.font='700 30px "Trebuchet MS",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,128,33,236);
+ const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthWrite:false,transparent:true,fog:false}));sp.scale.set(4.4,1.1,1);sp.position.y=2.3;sp.renderOrder=10;return sp}
+window.MPR={
+ add(id,ti,tc,name){this.del(id);const team=TEAMS[ti]||TEAMS[0],o=makeCar(team,tc,false),tag=nameTag(name);o.g.add(tag);o.tag=tag;o.spin=0;o.g.visible=false;scene.add(o.g);remote.set(id,o)},
+ del(id){const o=remote.get(id);if(!o)return;scene.remove(o.g);dispose(o.g);remote.delete(id)},
+ clear(){[...remote.keys()].forEach(k=>this.del(k))},
+ has(id){return remote.has(id)},
+ set(id,x,y,a,v,st,br,drs,dt,vis){const o=remote.get(id);if(!o)return;o.g.visible=vis;if(!vis)return;o.g.position.set(x,0,y);o.g.rotation.set(0,-a,0);o.spin+=v*dt/.36;
+  o.spinF.forEach(w=>w.rotation.z=-o.spin);o.spinR.forEach(w=>w.rotation.z=-o.spin);o.wheelsF.forEach(w=>w.rotation.y=-st*.42);
+  o.flap.rotation.z+=((drs?.5:0)-o.flap.rotation.z)*.25;o.brakeMat.emissiveIntensity=br?4:.25}};
 function onR3(){ren.setSize(W,H,false);camera.aspect=W/H;camera.updateProjectionMatrix()}
 window.onR3=onR3;
 
 // ---- per-frame
 function frame(){
  const c=car,sp=Math.hypot(c.vx,c.vy),fc=Math.cos(c.a),fs=Math.sin(c.a),tNow=performance.now()/1000;
+ if(window.MP&&MP.tick)MP.tick();
  if(carKey!==T.n+'|'+TCi+'|'+(nightMode?1:0))buildCar();
  // car transform and animation
  const vf=c.vx*fc+c.vy*fs,pt=-(c.br?.022:0)+(c.th?.01:0),rl=c.st*Math.min(1,Math.abs(vf)/60)*.03;pitch+=(pt-pitch)*.1;roll+=(rl-roll)*.1;

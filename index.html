@@ -39,6 +39,11 @@ details.pn{margin:10px 0;border:1px solid #2b303b;border-radius:6px;background:#
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}.row>label{flex:0 0 150px;color:var(--mut);font-weight:600;font-size:13px}
 .seg{display:flex;gap:4px;flex-wrap:wrap}.seg button{padding:6px 10px;border-radius:5px;border:2px solid #2b303b;background:#191d26;color:var(--fg);font:inherit;font-size:12px;cursor:pointer}.seg button.sel{border-color:var(--fg);background:#232938}
 .row input[type=range]{flex:1;min-width:120px}.row input[type=number]{width:70px;background:#191d26;color:var(--fg);border:2px solid #2b303b;border-radius:5px;padding:4px;font:inherit}
+#mpb{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(150px + env(safe-area-inset-top,0px));min-width:170px;background:var(--pan);padding:6px 10px;border-radius:6px;font-size:12px;display:none;pointer-events:none}
+#mpb .mpt{color:var(--mut);font-size:10px;letter-spacing:.08em;margin-bottom:3px}#mpb .me{color:var(--yel)}#mpf{margin-top:4px;color:#7cc4ff;opacity:0;transition:opacity .4s}
+#mpl{color:var(--mut);font-weight:500}#mpl li{margin-left:20px}#mps{font-weight:600;font-size:12px;color:var(--mut);margin-left:8px}
+.row input[type=text]{background:#191d26;color:var(--fg);border:2px solid #2b303b;border-radius:5px;padding:5px 8px;font:inherit;width:170px}
+#mpc{padding:7px 16px;border-radius:5px;border:0;background:#127a36;color:#fff;font:700 13px "Trebuchet MS",sans-serif;cursor:pointer}
 .note{color:var(--mut);font-weight:500;font-size:12px;margin-top:4px}.gd li{margin:4px 0 4px 20px;font-weight:500;color:var(--mut)}.gd b{color:var(--fg)}
 #menu{position:fixed;inset:0;background:linear-gradient(180deg,#0d0f14ee,#171b24f2);overflow:auto;touch-action:pan-y;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 28px}
 .w{max-width:760px;margin:0 auto}
@@ -60,8 +65,9 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <div class="hud" id="rev"></div>
 <div class="hud" id="spd"><b id="kmh">0</b> <small>km/h</small><b id="gr">N</b><div id="bars"><span id="th"><i></i></span><span id="bk"><i></i></span></div><div id="ers"><small>ERS</small><span><i></i></span></div><div id="tyr"><span id="tc"></span><span id="tt">M 100%</span><span id="dr">DRS</span></div></div>
 <div class="hud" id="lights"><i></i><i></i><i></i><i></i><i></i></div>
+<div class="hud" id="mpb"></div>
 <div id="toast"></div>
-<div id="tools"><button id="rst" title="Restart">↺</button><button id="mu" title="Sound">🔊</button><button id="rl" title="Racing line (L)">RL</button><button id="cm" title="Camera (C)">🎥</button><button id="mn" title="Menu">☰</button></div>
+<div id="tools"><button id="rst" title="Restart">↺</button><button id="mu" title="Sound">🔊</button><button id="rl" title="Racing line (L)">RL</button><button id="cm" title="Camera (C)">🎥</button><button id="tv" title="TV graphics (V)">TV</button><button id="mn" title="Menu">☰</button></div>
 <div id="ctl"><button class="b" data-k="L">◀</button><button class="b" data-k="R">▶</button><button class="b" data-k="B">BRAKE</button><button class="b" data-k="G">GAS</button><button class="b" data-k="D">DRS</button><button class="b" data-k="O">ERS</button></div>
 <div id="menu"><div class="w">
 <h1>Apex <b>GP</b></h1>
@@ -81,6 +87,13 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <div class="row"><label>Look to apex</label><input type="range" id="lta" min="0" max="100"><span id="ltav"></span></div>
 <p class="note">Real-driver FOV: horizontal FOV = 2 × atan(screen width ÷ (2 × eye distance)). Example: a 32&quot; monitor (71 cm wide) viewed from 80 cm gives about 48&deg;. Sit closer or use a wider screen and the angle grows, so the view matches what you would see through a real windscreen. Applies to the cockpit camera (C).</p>
 </details>
+<details class="pn" id="mpp"><summary>Multiplayer <span id="mps">offline</span></summary>
+<div class="row"><label>Driver name</label><input type="text" id="mpn" maxlength="14" autocomplete="off"></div>
+<div class="row"><label>Room code</label><input type="text" id="mpr" maxlength="16" autocomplete="off" placeholder="PUBLIK"></div>
+<div class="row"><button id="mpc">Connect</button><span class="note" id="mph" style="margin:0 0 0 8px"></span></div>
+<ol id="mpl"></ol>
+<p class="note">Ghost racing over the 7MIT realtime server: everyone in the same room and on the same circuit sees each other on track and in the timing tower, with no collisions. Share a room code with friends, or use PUBLIK. Only your name, car position and lap times are sent, nothing is stored.</p>
+</details>
 <details class="pn" id="gdp"><summary>Race engineer guide</summary>
 <ul class="gd">
 <li><b>Tyres:</b> watch the % next to the compound. Grip falls the more you corner hard and brake, so smooth inputs make a stint last. Soft is fastest but wears about 3x faster than Hard.</li>
@@ -97,6 +110,7 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <p class="help">Keyboard: arrows or WASD to drive, Space to brake, R to restart, C to change camera, L to show or hide the racing line (red = brake, yellow = lift, green = full throttle), E opens DRS in the green-marked zones, Esc for menu. Phone: use the on-screen buttons (landscape works best).<br>Tracks are original layouts inspired by famous circuits, not accurate copies (this one is about <span id="len"></span> km). Team names and colours follow the 2026 grid, but handling and speeds are a simplified simulation, not official data.</p>
 </div></div>
 <script src="three.min.js"></script>
+<script src="supabase.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const cv=$('c'),mm=$('mm'),mx=mm.getContext('2d');
@@ -154,7 +168,7 @@ const drsZ=i=>TRK.drs.some(z=>i>=z[0]&&i<=z[1]);
 function buildDRS(){DZ=new Path2D();DM=new Path2D();TUN=new Path2D();if(TRK.tun)for(let i=TRK.tun[0];i<=TRK.tun[1];i++)i==TRK.tun[0]?TUN.moveTo(S[i][0],S[i][1]):TUN.lineTo(S[i][0],S[i][1]);for(const[a,b]of TRK.drs){for(let i=a;i<=b;i++)i==a?DZ.moveTo(S[i][0],S[i][1]):DZ.lineTo(S[i][0],S[i][1]);for(const i of[a,b]){const p=S[i-1],q=S[i+1],dx=q[0]-p[0],dy=q[1]-p[1],l=Math.hypot(dx,dy);DM.moveTo(S[i][0]-dy/l*HW,S[i][1]+dx/l*HW);DM.lineTo(S[i][0]+dy/l*HW,S[i][1]-dx/l*HW)}}}buildDRS();
 let KEY='apexgp_records_v1'+(TI?'_'+TI:'')+(TI>2?'b':'');
 TRACKS.forEach((t,i)=>{const b=document.createElement('button');b.className='t'+(i==TI?' sel':'');b.innerHTML='<b>'+t.name+'</b><br><small>'+t.blurb+'</small>';b.onclick=()=>{if(i==TI)return;loadTrack(i);[...$('tracks').children].forEach((x,k)=>x.classList.toggle('sel',k==i))};$('tracks').appendChild(b)});
-function loadTrack(i){TI=i;TRK=TRACKS[i];CP=TRK.cp;try{localStorage.setItem('apexgp_track',i)}catch(e){}buildA();buildB();buildDRS();if(typeof build3D=='function')build3D();B1=Math.floor(N/3);B2=Math.floor(2*N/3);KEY='apexgp_records_v1'+(i?'_'+i:'')+(i>2?'b':'');try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){rec=[]}bestSec=[1e9,1e9,1e9];lastLap=null;place();$('rh').textContent='Lap records: '+TRK.name;renderRec()}
+function loadTrack(i){TI=i;TRK=TRACKS[i];CP=TRK.cp;try{localStorage.setItem('apexgp_track',i)}catch(e){}buildA();buildB();buildDRS();if(typeof build3D=='function')build3D();if(window.MP)MP.onTrack();B1=Math.floor(N/3);B2=Math.floor(2*N/3);KEY='apexgp_records_v1'+(i?'_'+i:'')+(i>2?'b':'');try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){rec=[]}bestSec=[1e9,1e9,1e9];lastLap=null;place();$('rh').textContent='Lap records: '+TRK.name;renderRec()}
 $('rh').textContent='Lap records: '+TRK.name;$('rl').onclick=()=>{RL=!RL;SET.rl=RL?1:0;saveSet();syncSet()};let rec=[];
 try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
 const fmt=t=>{if(t==null||!isFinite(t))return '–:––.–––';const m=Math.floor(t/60),s=t-m*60;return m+':'+s.toFixed(3).padStart(6,'0')};
@@ -202,14 +216,14 @@ place();
 function toast(t,c,ms){const e=$('toast');e.textContent=t;e.style.color=c||'#fff';e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,ms||2200)}
 function lights(n){[...$('lights').children].forEach((e,i)=>e.classList.toggle('on',i<n))}
 function begin(){aud();if(AC&&AC.state=='suspended')AC.resume();$('menu').style.display='none';try{localStorage.setItem('apexgp_sel',TEAMS.indexOf(T)+','+TCi)}catch(e){}tw=0;place();lapStart=null;clk=0;s1=s2=null;clean=true;lap=0;lastLap=null;secShow=[null,null,null];
-state='grid';const k=++tok;lights(0);$('lights').style.display='flex';
+if(window.BC)BC.begin();if(window.MP)MP.onTeam();state='grid';const k=++tok;lights(0);$('lights').style.display='flex';
 for(let n=1;n<=5;n++)setTimeout(()=>{if(k==tok)lights(n)},n*800);
 setTimeout(()=>{if(k==tok){lights(0);$('lights').style.display='none';state='race';toast('GO!','#2ee66b',900)}},4800+Math.random()*1200)}
 function menu(){tok++;state='menu';$('menu').style.display='block';$('lights').style.display='none';renderRec()}
 $('go').onclick=begin;$('rst').onclick=()=>{if(state!='menu')begin()};$('mn').onclick=menu;
 $('lights').style.display='none';syncSet();
 // ---- physics
-function secDone(i,t){const g=clean&&t<bestSec[i];if(g)bestSec[i]=t;secShow[i]=[t,g?'g':'y']}
+function secDone(i,t){const old=bestSec[i],g=clean&&t<old;if(g)bestSec[i]=t;secShow[i]=[t,g?'g':'y'];if(window.BC)BC.sector(i,t,old,g)}
 function step(dt){
 const c=car,racing=state=='race';
 const sIn=K.R-K.L;c.st+=(sIn-c.st)*Math.min(1,dt*(sIn?5.5*SET.steer:9));
@@ -257,8 +271,8 @@ else if(lapStart!=null){
  if(pi<B2&&i>=B2&&i-pi<80&&s1!=null&&s2==null){s2=clk;secDone(1,s2-s1)}}
 c.pi=i}
 function finishLap(){const lt=clk-lapStart;lap++;secDone(2,clk-s2);
-if(!clean){toast('Lap deleted: track limits','#ff5a5a',2600);return}
-lastLap=lt;const pb=!rec.length||lt<rec[0].t;addRec(lt);
+if(!clean){toast('Lap deleted: track limits','#ff5a5a',2600);if(window.BC)BC.deleted();return}
+lastLap=lt;const prev=rec.length?rec[0].t:null,pb=prev==null||lt<prev;addRec(lt);if(window.BC)BC.lap(lt,pb,prev);if(window.MP)MP.lap(lt);
 toast((pb?'NEW RECORD  ':'LAP  ')+fmt(lt),pb?'#c77dff':'#2ee66b',2800)}
 // ---- render
 let CAM=0,ha=0;const CN=['Top view','Chase cam','Cockpit cam','T-cam'];
@@ -276,7 +290,7 @@ for(let i=0;i<N;i++){const j=(i+1)%N;RC[i]=V[j]<V[i]-.015?'#ff3b3b':(V[j]>V[i]+.
 function drawMini(){const c=car;
 mx.clearRect(0,0,240,168);mx.save();mx.scale(2,2);mx.translate(4,4);mx.lineWidth=3;mx.strokeStyle='#8c93a1';mx.beginPath();
 S.forEach((p,i)=>{const x=(p[0]-X0)*MS,y=(p[1]-Y0)*MS;i?mx.lineTo(x,y):mx.moveTo(x,y)});mx.closePath();mx.stroke();
-mx.fillStyle=T.c1;mx.strokeStyle='#fff';mx.lineWidth=1.2;mx.beginPath();mx.arc((c.x-X0)*MS,(c.y-Y0)*MS,3.2,0,7);mx.fill();mx.stroke();mx.restore()}
+mx.fillStyle=T.c1;mx.strokeStyle='#fff';mx.lineWidth=1.2;mx.beginPath();mx.arc((c.x-X0)*MS,(c.y-Y0)*MS,3.2,0,7);mx.fill();mx.stroke();if(window.MP)MP.mini(mx);mx.restore()}
 // ---- hud
 const rv=$('rev');for(let i=0;i<15;i++){const e=document.createElement('i');e.className=i<5?'a':i<10?'b':'c';rv.appendChild(e)}
 let hc=0;
@@ -299,4 +313,6 @@ if(state!='menu'){acc+=dt;while(acc>=1/120){step(1/120);acc-=1/120}}
 if(window.draw)draw();hud();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 </script>
-<script src="render3d.js"></script></body></html>
+<script src="render3d.js"></script>
+<script src="multiplayer.js"></script>
+<script src="overlay.js"></script></body></html>
