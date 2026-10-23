@@ -47,6 +47,20 @@ details.pn{margin:10px 0;border:1px solid #2b303b;border-radius:6px;background:#
 .row input[type=text]{background:#191d26;color:var(--fg);border:2px solid #2b303b;border-radius:5px;padding:5px 8px;font:inherit;width:170px}
 #mpc{padding:7px 16px;border-radius:5px;border:0;background:#127a36;color:#fff;font:700 13px "Trebuchet MS",sans-serif;cursor:pointer}
 .by{display:flex;align-items:center;gap:8px;margin:4px 0 2px;color:var(--mut);font-weight:600;font-size:13px;letter-spacing:.02em}.by b{color:var(--fg)}.by svg{width:26px;height:14px;flex:none}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:14px 0}
+.mode{padding:22px 20px;border:2px solid #2b303b;border-radius:10px;background:linear-gradient(160deg,#1b2030,#141821);color:var(--fg);text-align:left;font:inherit;cursor:pointer;transition:transform .15s,border-color .15s}
+.mode:hover{transform:translateY(-3px);border-color:var(--red)}.mode b{display:block;font:900 26px/1.1 "Trebuchet MS",sans-serif;margin-bottom:6px}.mode small{color:var(--mut);font-weight:500;font-size:13px;line-height:1.4}
+.back{background:none;border:0;color:var(--mut);font:600 14px "Trebuchet MS",sans-serif;cursor:pointer;padding:4px 0;margin:4px 0 8px}.back:hover{color:var(--fg)}
+h2{font:900 24px/1.1 "Trebuchet MS",sans-serif;margin:2px 0 8px}h2 #mps{font-size:12px;font-weight:600;margin-left:6px}
+.card{border:1px solid #2b303b;border-radius:8px;background:#161a22;padding:10px 14px;margin:10px 0}.card h3{font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.cta{padding:9px 18px;border:0;border-radius:6px;background:var(--red);color:#fff;font:700 14px "Trebuchet MS",sans-serif;cursor:pointer}.cta.alt{background:#2a3350}.cta:disabled{opacity:.4;cursor:default}
+.mini{padding:4px 10px;border-radius:5px;border:1px solid #3a4152;background:#1c2130;color:var(--fg);font:600 12px "Trebuchet MS",sans-serif;cursor:pointer}
+select{background:#191d26;color:var(--fg);border:2px solid #2b303b;border-radius:5px;padding:6px 8px;font:inherit;min-width:200px;max-width:100%}select:disabled{opacity:.6}
+.rc{display:flex;align-items:center;gap:12px}.rc b{font:900 34px/1 "Courier New",monospace;letter-spacing:.2em;color:var(--yel)}
+.rm{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:6px 0;border:1px solid #2b303b;border-radius:6px;background:#191d26}.rm .nm{font-weight:700}.rm .sb{color:var(--mut);font-size:12px;font-weight:500}.rm .rt{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pl{display:flex;align-items:center;gap:8px;padding:5px 8px;margin:3px 0;background:#191d26;border-radius:5px}.pl i{width:8px;height:18px;border-radius:2px}.pl .hb{margin-left:auto;font-size:10px;letter-spacing:.1em;background:var(--red);padding:1px 6px;border-radius:3px}
+.gt{margin:14px 0 6px}#garage{margin-top:6px}
+.gh{grid-column:1/-1;color:var(--mut);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
 .note{color:var(--mut);font-weight:500;font-size:12px;margin-top:4px}.gd li{margin:4px 0 4px 20px;font-weight:500;color:var(--mut)}.gd b{color:var(--fg)}
 #menu{position:fixed;inset:0;background:linear-gradient(180deg,#0d0f14ee,#171b24f2);overflow:auto;touch-action:pan-y;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 28px}
 .w{max-width:760px;margin:0 auto}
@@ -75,10 +89,56 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <div id="menu"><div class="w">
 <h1>Apex <b>GP</b></h1>
 <p class="by"><svg viewBox="0 0 26 14" aria-hidden="true"><path d="M0 14 8 3l4 5 5-8 9 14z" fill="#4db8ff"/></svg><span>Powered &amp; organised by <b>Jumay&trade; Corporation</b></span></p>
+<div id="scr-home">
+<p class="sub">A 3D Formula 1 time attack with real circuits. Race alone against the clock, or take on friends online.</p>
+<div class="modes">
+<button class="mode" id="m-sp"><b>Single player</b><small>Time attack on 8 real circuits and 5 original layouts. Beat your own record.</small></button>
+<button class="mode" id="m-mp"><b>Multiplayer</b><small>Host your own room and share its code, join a friend with a code, or discover public rooms.</small></button>
+</div>
+<p class="help">Keyboard: arrows or WASD to drive, Space to brake, R to restart, C to change camera, L to show or hide the racing line (red = brake, yellow = lift, green = full throttle), E opens DRS in the green-marked zones, Esc for menu. Phone: use the on-screen buttons (landscape works best).<br>Apex GP is powered and organised by Jumay&trade; Corporation. The real circuits use their true layouts and lap lengths (from the open f1-circuits dataset), but they are flat and 16 m wide, and the five original circuits are invented. This circuit is <span id="len"></span> km. Team names and colours follow the 2026 grid, but handling and speeds are a simplified simulation, not official data.</p>
+</div>
+<div id="scr-sp" style="display:none">
+<button class="back" data-home>&larr; Back</button>
+<h2>Single player</h2>
 <p class="sub">Time attack. Pick a car, set a lap time, beat your record. Stay inside the white line: a lap with all four wheels off the track is deleted.</p>
-<div id="tracks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:10px"></div><div id="teams"></div><div id="tyres" style="display:flex;gap:8px;margin-top:8px"></div>
-
-<details class="pn" open id="setp"><summary>Realism &amp; assists</summary>
+<div id="tracks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:10px"></div>
+<div id="gslot-sp"></div>
+<button id="go">Start session</button>
+<h3 id="rh" style="margin-bottom:4px">Lap records</h3><ol id="rec"></ol>
+</div>
+<div id="scr-mp" style="display:none">
+<button class="back" id="mpback">&larr; Back</button>
+<h2>Multiplayer <span id="mps">offline</span></h2>
+<div class="row"><label>Driver name</label><input type="text" id="mpn" maxlength="14" autocomplete="off"></div>
+<div id="mp-lobby">
+<p id="mperr" class="note" style="color:#ff5a5a;min-height:1em"></p>
+<div class="card"><h3>Host a room</h3>
+<div class="row"><label>Room name</label><input type="text" id="mprn" maxlength="24" autocomplete="off" placeholder="My room"></div>
+<div class="row"><label>Circuit</label><select id="mpct"></select></div>
+<div class="row"><label>Visibility</label><div class="seg" id="mpvis"></div></div>
+<div class="row"><label>Max players</label><div class="seg" id="mpmax"></div></div>
+<div class="row"><button class="cta" id="mpcreate">Create room</button><span class="note" style="margin:0">You get a 5-character code to share. Public rooms also appear in Discover.</span></div></div>
+<div class="card"><h3>Join with a code</h3>
+<div class="row"><input type="text" id="mpcode" maxlength="6" autocomplete="off" placeholder="CODE" style="text-transform:uppercase;letter-spacing:.2em;width:130px"><button class="cta" id="mpjoin">Join</button></div></div>
+<div class="card"><h3>Discover rooms <button id="mprefresh" class="mini">Refresh</button></h3>
+<div id="mpdisc"><p class="note">Looking for rooms…</p></div></div>
+</div>
+<div id="mp-room" style="display:none">
+<div class="card"><div class="rc"><span class="note" style="margin:0">ROOM CODE</span><b id="rcode">-----</b><button id="rcopy" class="mini">Copy</button></div>
+<div class="note" id="rinfo"></div>
+<div class="row"><label>Circuit</label><select id="rtrack"></select></div>
+<div id="rlist"></div>
+<div class="row"><button class="cta" id="rstartall">Start for everyone</button><button class="cta alt" id="rstart">Start session</button><button class="mini" id="rleave">Leave room</button></div>
+<p class="note" id="rnote"></p></div>
+</div>
+<div id="gslot-mp"></div>
+<p class="note">Ghost racing over the 7MIT realtime server: everyone in a room sees each other on track and in the timing tower, with no collisions. Rooms and codes are temporary and nothing is stored. Only your name, car position and lap times are shared.</p>
+</div>
+<div id="garage">
+<h3 class="gt">Garage</h3>
+<div id="teams"></div>
+<div id="tyres" style="display:flex;gap:8px;margin-top:8px"></div>
+<details class="pn" id="setp"><summary>Realism &amp; assists</summary>
 <div class="row"><label>Preset</label><div class="seg" id="pre"></div></div>
 <div id="srows"></div>
 <p class="note">Only assists that exist in this game are listed. ABS and traction control matter: with them off, braking hard while turning loses front grip, and full throttle in low-speed corners makes the rear step out. Gearbox is always automatic.</p>
@@ -91,13 +151,6 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 <div class="row"><label>Look to apex</label><input type="range" id="lta" min="0" max="100"><span id="ltav"></span></div>
 <p class="note">Real-driver FOV: horizontal FOV = 2 × atan(screen width ÷ (2 × eye distance)). Example: a 32&quot; monitor (71 cm wide) viewed from 80 cm gives about 48&deg;. Sit closer or use a wider screen and the angle grows, so the view matches what you would see through a real windscreen. Applies to the cockpit camera (C).</p>
 </details>
-<details class="pn" id="mpp"><summary>Multiplayer <span id="mps">offline</span></summary>
-<div class="row"><label>Driver name</label><input type="text" id="mpn" maxlength="14" autocomplete="off"></div>
-<div class="row"><label>Room code</label><input type="text" id="mpr" maxlength="16" autocomplete="off" placeholder="PUBLIK"></div>
-<div class="row"><button id="mpc">Connect</button><span class="note" id="mph" style="margin:0 0 0 8px"></span></div>
-<ol id="mpl"></ol>
-<p class="note">Ghost racing over the 7MIT realtime server: everyone in the same room and on the same circuit sees each other on track and in the timing tower, with no collisions. Share a room code with friends, or use PUBLIK. Only your name, car position and lap times are sent, nothing is stored.</p>
-</details>
 <details class="pn" id="gdp"><summary>Race engineer guide</summary>
 <ul class="gd">
 <li><b>Tyres:</b> watch the % next to the compound. Grip falls the more you corner hard and brake, so smooth inputs make a stint last. Soft is fastest but wears about 3x faster than Hard.</li>
@@ -109,10 +162,9 @@ h1{font:700 34px/1 "Trebuchet MS",sans-serif;letter-spacing:-.5px}h1 b{color:var
 </ul>
 <p class="note">Fuel mixture, safety cars, penalties, AI opponents and race distance are not part of this time-attack game.</p>
 </details>
-<button id="go">Start session</button>
-<h3 id="rh" style="margin-bottom:4px">Lap records</h3><ol id="rec"></ol>
-<p class="help">Keyboard: arrows or WASD to drive, Space to brake, R to restart, C to change camera, L to show or hide the racing line (red = brake, yellow = lift, green = full throttle), E opens DRS in the green-marked zones, Esc for menu. Phone: use the on-screen buttons (landscape works best).<br>Apex GP is powered and organised by Jumay&trade; Corporation. Tracks are original layouts inspired by famous circuits, not accurate copies (this one is about <span id="len"></span> km). Team names and colours follow the 2026 grid, but handling and speeds are a simplified simulation, not official data.</p>
+</div>
 </div></div>
+<script src="circuits.js"></script>
 <script src="three.min.js"></script>
 <script src="supabase.js"></script>
 <script>
@@ -136,12 +188,16 @@ const TH=[
 {gr:['#6f9a6a','#4a7c4a','#4f8250','#487648'],sk:['#7b8da3','#d8dfe8'],hl:'#7b8b82',hz:['rgba(215,222,232,.9)','rgba(215,222,232,0)'],gv:['#b7ab86','#aea27d'],as:['#3d4146','#383c41'],tc:['#2d6a33','#397a3f'],nt:110,ads:1},
 {gr:['#2b3345','#1c2231','#202738','#1a2030'],sk:['#04060f','#1d2748'],hl:'#10172b',hz:['rgba(40,52,96,.9)','rgba(40,52,96,0)'],gv:['#3a3f4f','#353a49'],as:['#23252d','#1f2128'],tc:['#18332a','#1f3d33'],bld:1,bc:['#2a3150','#3a2f58','#23344f','#33436a','#42305a'],night:1,nt:300,ads:1}];
 TRACKS.forEach((t,i)=>Object.assign(t,TH[i]));
-let TI=0;try{TI=+(localStorage.getItem('apexgp_track')||0)}catch(e){}if(!TRACKS[TI])TI=0;
+if(window.REAL_TRACKS)REAL_TRACKS.forEach(t=>TRACKS.push(t));
+let TI=Math.max(0,TRACKS.findIndex(t=>t.real));try{const sv=localStorage.getItem('apexgp_track');if(sv!=null)TI=+sv}catch(e){}if(!TRACKS[TI])TI=Math.max(0,TRACKS.findIndex(t=>t.real));
 let TRK=TRACKS[TI],CP=TRK.cp,S,N,P,X0,X1,Y0,Y1,MS,TREES,CR,BL,BR,ASPH,NZ,NX,NY,RO,RX,RY,RC,RUNS,V,DS,B1,B2,DZ,DM,TUN,RL=true;const skids=[],parts=[],AD=['#d71920','#0a3d91','#ffd100','#ffffff','#15151a','#00a19b','#6f2da8','#ff7a00'];
 function buildA(){S=[];
 for(let i=0;i<CP.length;i++){const p0=CP[(i+CP.length-1)%CP.length],p1=CP[i],p2=CP[(i+1)%CP.length],p3=CP[(i+2)%CP.length];
 for(let k=0;k<SEG;k++){const t=k/SEG,t2=t*t,t3=t2*t;
 S.push([0,1].map(d=>.5*(2*p1[d]+(p2[d]-p0[d])*t+(2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*t2+(3*p1[d]-p0[d]-3*p2[d]+p3[d])*t3)))}}
+if(TRK.real){const c=[0];for(let i=1;i<=S.length;i++){const a=S[i-1],b=S[i%S.length];c.push(c[i-1]+Math.hypot(b[0]-a[0],b[1]-a[1]))}
+ const L=c[S.length],n=Math.round(L/2),R=[];let j=0;for(let q=0;q<n;q++){const t=q*L/n;while(c[j+1]<t)j++;const f=(t-c[j])/(c[j+1]-c[j]||1),a=S[j],b=S[(j+1)%S.length];R.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f])}
+ S=R;TRK.drs=TRK.drsF.map(z=>[Math.max(2,Math.round(z[0]*R.length)),Math.min(R.length-3,Math.round(z[1]*R.length))]).filter(z=>z[1]-z[0]>20)}
 N=S.length;P=new Path2D();
 S.forEach((p,i)=>i?P.lineTo(p[0],p[1]):P.moveTo(p[0],p[1]));P.closePath();
 let TL=0;for(let i=0;i<N;i++){const a=S[i],b=S[(i+1)%N];TL+=Math.hypot(b[0]-a[0],b[1]-a[1])}
@@ -171,8 +227,12 @@ TCS.forEach((t,i)=>{const b=document.createElement('button');b.className='t'+(i=
 const drsZ=i=>TRK.drs.some(z=>i>=z[0]&&i<=z[1]);
 function buildDRS(){DZ=new Path2D();DM=new Path2D();TUN=new Path2D();if(TRK.tun)for(let i=TRK.tun[0];i<=TRK.tun[1];i++)i==TRK.tun[0]?TUN.moveTo(S[i][0],S[i][1]):TUN.lineTo(S[i][0],S[i][1]);for(const[a,b]of TRK.drs){for(let i=a;i<=b;i++)i==a?DZ.moveTo(S[i][0],S[i][1]):DZ.lineTo(S[i][0],S[i][1]);for(const i of[a,b]){const p=S[i-1],q=S[i+1],dx=q[0]-p[0],dy=q[1]-p[1],l=Math.hypot(dx,dy);DM.moveTo(S[i][0]-dy/l*HW,S[i][1]+dx/l*HW);DM.lineTo(S[i][0]+dy/l*HW,S[i][1]-dx/l*HW)}}}buildDRS();
 let KEY='apexgp_records_v1'+(TI?'_'+TI:'')+(TI>2?'b':'');
-TRACKS.forEach((t,i)=>{const b=document.createElement('button');b.className='t'+(i==TI?' sel':'');b.innerHTML='<b>'+t.name+'</b><br><small>'+t.blurb+'</small>';b.onclick=()=>{if(i==TI)return;loadTrack(i);[...$('tracks').children].forEach((x,k)=>x.classList.toggle('sel',k==i))};$('tracks').appendChild(b)});
-function loadTrack(i){TI=i;TRK=TRACKS[i];CP=TRK.cp;try{localStorage.setItem('apexgp_track',i)}catch(e){}buildA();buildB();buildDRS();if(typeof build3D=='function')build3D();if(window.MP)MP.onTrack();B1=Math.floor(N/3);B2=Math.floor(2*N/3);KEY='apexgp_records_v1'+(i?'_'+i:'')+(i>2?'b':'');try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){rec=[]}bestSec=[1e9,1e9,1e9];lastLap=null;place();$('rh').textContent='Lap records: '+TRK.name;renderRec()}
+{const hd=(t,n)=>{const h=document.createElement('div');h.className='gh';h.textContent=t+' ('+n+')';$('tracks').appendChild(h)};
+ const add=(t,i)=>{const b=document.createElement('button');b.className='t'+(i==TI?' sel':'');b.dataset.i=i;b.innerHTML='<b>'+t.name+'</b><br><small>'+t.blurb+'</small>';
+  b.onclick=()=>{if(window.MP&&MP.locked&&MP.locked())return;if(i==TI)return;loadTrack(i);if(window.MP&&MP.onHostTrack)MP.onHostTrack(i)};$('tracks').appendChild(b)};
+ hd('Real circuits',TRACKS.filter(t=>t.real).length);TRACKS.forEach((t,i)=>{if(t.real)add(t,i)});hd('Original circuits',TRACKS.filter(t=>!t.real).length);TRACKS.forEach((t,i)=>{if(!t.real)add(t,i)})}
+function markTrack(){[...$('tracks').querySelectorAll('button')].forEach(x=>x.classList.toggle('sel',+x.dataset.i===TI))}
+function loadTrack(i){TI=i;TRK=TRACKS[i];CP=TRK.cp;try{localStorage.setItem('apexgp_track',i)}catch(e){}buildA();buildB();buildDRS();if(typeof build3D=='function')build3D();if(window.MP)MP.onTrack();B1=Math.floor(N/3);B2=Math.floor(2*N/3);KEY='apexgp_records_v1'+(i?'_'+i:'')+(i>2?'b':'');try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){rec=[]}bestSec=[1e9,1e9,1e9];lastLap=null;place();if(typeof markTrack=='function')markTrack();$('rh').textContent='Lap records: '+TRK.name;renderRec()}
 $('rh').textContent='Lap records: '+TRK.name;$('rl').onclick=()=>{RL=!RL;SET.rl=RL?1:0;saveSet();syncSet()};let rec=[];
 try{rec=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
 const fmt=t=>{if(t==null||!isFinite(t))return '–:––.–––';const m=Math.floor(t/60),s=t-m*60;return m+':'+s.toFixed(3).padStart(6,'0')};
@@ -208,10 +268,9 @@ const num=(id,k,lo,hi)=>$(id).oninput=e=>{const v=+e.target.value;if(v>=lo&&v<=h
 $('shk').oninput=e=>{SET.shk=e.target.value/100;saveSet();shUi()};$('lta').oninput=e=>{SET.lta=e.target.value/100;saveSet();shUi()};
 Object.keys(PRESETS).forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{Object.assign(SET,PRESETS[n]);saveSet();syncSet()};$('pre').appendChild(b)});
 // ---- audio
-let AC,o1,o2,ga,muted=false;
-function aud(){if(AC)return;try{AC=new(window.AudioContext||window.webkitAudioContext)();o1=AC.createOscillator();o2=AC.createOscillator();o1.type='sawtooth';o2.type='square';ga=AC.createGain();ga.gain.value=0;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1100;o1.connect(f);o2.connect(f);f.connect(ga);ga.connect(AC.destination);o1.start();o2.start()}catch(e){AC=null}}
-function snd(rpm,th){if(!AC)return;const q=rpm/60*3;o1.frequency.value=q;o2.frequency.value=q*2.01;ga.gain.value=muted||state=='menu'?0:.025+.04*th}
-$('mu').onclick=()=>{muted=!muted;$('mu').textContent=muted?'🔇':'🔊'};
+let muted=false;
+function aud(){if(window.AUD)AUD.start()}
+$('mu').onclick=()=>{muted=!muted;$('mu').textContent=muted?'🔇':'🔊';if(window.AUD)AUD.setMuted(muted)};
 // ---- state
 let state='menu',car,clk=0,lapStart=null,lap=0,lastLap=null,clean=true,s1=null,s2=null,tok=0,bestSec=[1e9,1e9,1e9],secShow=[null,null,null];
 B1=Math.floor(N/3);B2=Math.floor(2*N/3);
@@ -219,13 +278,20 @@ function place(){const i0=N-6,p=S[i0],q=S[i0+1];car={x:p[0],y:p[1],a:Math.atan2(
 place();
 function toast(t,c,ms){const e=$('toast');e.textContent=t;e.style.color=c||'#fff';e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,ms||2200)}
 function lights(n){[...$('lights').children].forEach((e,i)=>e.classList.toggle('on',i<n))}
-function begin(){aud();if(AC&&AC.state=='suspended')AC.resume();$('menu').style.display='none';try{localStorage.setItem('apexgp_sel',TEAMS.indexOf(T)+','+TCi)}catch(e){}tw=0;place();lapStart=null;clk=0;s1=s2=null;clean=true;lap=0;lastLap=null;secShow=[null,null,null];
+function begin(){aud();$('menu').style.display='none';try{localStorage.setItem('apexgp_sel',TEAMS.indexOf(T)+','+TCi)}catch(e){}tw=0;place();lapStart=null;clk=0;s1=s2=null;clean=true;lap=0;lastLap=null;secShow=[null,null,null];
 if(window.BC)BC.begin();if(window.MP)MP.onTeam();state='grid';const k=++tok;lights(0);$('lights').style.display='flex';
 for(let n=1;n<=5;n++)setTimeout(()=>{if(k==tok)lights(n)},n*800);
 setTimeout(()=>{if(k==tok){lights(0);$('lights').style.display='none';state='race';toast('GO!','#2ee66b',900)}},4800+Math.random()*1200)}
-function menu(){tok++;state='menu';$('menu').style.display='block';$('lights').style.display='none';renderRec()}
+let SCR='home';
+function showScreen(n){SCR=n;['home','sp','mp'].forEach(k=>$('scr-'+k).style.display=k===n?'block':'none');
+ $('garage').style.display=n==='home'?'none':'block';if(n!=='home')$('gslot-'+n).appendChild($('garage'));$('menu').scrollTop=0;
+ if(window.MP){if(n==='mp')MP.enter();else MP.exit()}}
+function menu(){tok++;state='menu';$('menu').style.display='block';$('lights').style.display='none';renderRec();showScreen(window.MP&&MP.inRoom&&MP.inRoom()?'mp':(SCR==='mp'?'home':SCR))}
+$('m-sp').onclick=()=>showScreen('sp');$('m-mp').onclick=()=>showScreen('mp');
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>showScreen('home'));
+$('mpback').onclick=()=>{if(window.MP)MP.leave();showScreen('home')};
 $('go').onclick=begin;$('rst').onclick=()=>{if(state!='menu')begin()};$('mn').onclick=menu;
-$('lights').style.display='none';syncSet();
+$('lights').style.display='none';syncSet();showScreen('home');
 // ---- physics
 function secDone(i,t){const old=bestSec[i],g=clean&&t<old;if(g)bestSec[i]=t;secShow[i]=[t,g?'g':'y'];if(window.BC)BC.sector(i,t,old,g)}
 function step(dt){
@@ -302,7 +368,7 @@ function hud(){
 const c=car,kmh=Math.hypot(c.vx,c.vy)*3.6,g=kmh<3?0:Math.min(8,Math.floor(kmh/40)+1);
 const lo=(g-1)*40,hi=g==8?345:g*40,rf=g?Math.min(1,Math.max(0,(kmh-lo)/(hi-lo))):0;
 c.rpm=g?7500+5000*rf:4200+c.th*5000;
-snd(c.rpm,c.th);
+if(window.AUD)AUD.update(c,kmh,g,state);
 if(++hc%2)return;
 $('kmh').textContent=Math.round(kmh);$('gr').textContent=g?g:'N';
 c.tv=(c.tv||0)+(c.th-(c.tv||0))*.35;$('th').firstChild.style.width=(c.tv*100)+'%';$('bk').firstChild.style.width=(c.br*100)+'%';
@@ -317,6 +383,7 @@ if(state!='menu'){acc+=dt;while(acc>=1/120){step(1/120);acc-=1/120}}
 if(window.draw)draw();hud();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 </script>
+<script src="audio.js"></script>
 <script src="render3d.js"></script>
 <script src="multiplayer.js"></script>
 <script src="overlay.js"></script></body></html>
