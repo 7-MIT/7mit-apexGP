@@ -34,10 +34,32 @@ checker:()=>tex(16,128,(g,w,h)=>{for(let x=0;x<2;x++)for(let y=0;y<16;y++){g.fil
 windows:(lit)=>tex(128,256,(g,w,h)=>{g.fillStyle='#8b919c';g.fillRect(0,0,w,h);for(let y=6;y<h-6;y+=14)for(let x=6;x<w-6;x+=14){const on=lit&&rnd()<.5;g.fillStyle=on?(rnd()<.5?'#ffd98a':'#bfe3ff'):'#2b3340';g.fillRect(x,y,8,9)}}),
 glow:()=>tex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,230,170,.95)');r.addColorStop(.4,'rgba(255,220,150,.35)');r.addColorStop(1,'rgba(255,220,150,0)');g.fillStyle=r;g.fillRect(0,0,w,h)})};
 
-// ---- trackside LED advertising (Jumay banner, 1568x196 = 8:1)
-const adTex=new THREE.Texture();adTex.encoding=THREE.sRGBEncoding;adTex.wrapS=THREE.RepeatWrapping;adTex.anisotropy=aniso;
-{const im=new Image();im.onload=()=>{adTex.image=im;adTex.needsUpdate=true};im.src='jumay.png'}
-const AD_R=8;
+// ---- trackside LED advertising: six Jumay banners (8:1) packed in one atlas for the wall boards,
+// plus three videotron screens that slide through the banners
+const AD_FILES=['jumay.png','ad-internet.jpg','ad-tech.jpg','ad-audio.jpg','ad-shoes.jpg','ad-radio.jpg'];
+const AD_R=8,AW=768,AH=96,AD_N=AD_FILES.length,AD_PERIOD=7,adImgs=new Array(AD_N).fill(null);
+const adAtlas=document.createElement('canvas');adAtlas.width=AW*AD_N;adAtlas.height=AH;
+const adAtlasTex=new THREE.CanvasTexture(adAtlas);adAtlasTex.encoding=THREE.sRGBEncoding;adAtlasTex.anisotropy=aniso;
+// videotrons slide through the same atlas by scrolling the texture offset (no per-frame canvas redraw)
+// Screen textures are created only once every banner is loaded (a texture uploaded while its canvas is still empty stays black).
+const adScreens=[0,2,4].map(ph=>({t:null,ph,binds:[]}));let adReady=false;
+// A material that already exists is not reliably refreshed when its texture changes, so screens start with a plain dark
+// material and each mesh is given a brand-new textured material once every banner has loaded.
+const adDark=new THREE.MeshBasicMaterial({color:0x10131a});
+function adBind(m,i,col){const sc=adScreens[i];sc.binds.push([m,col]);m.material=sc.t?new THREE.MeshBasicMaterial({map:sc.t,color:col}):adDark}
+function adMakeScreens(){adScreens.forEach(sc=>{const t=new THREE.CanvasTexture(adAtlas);t.encoding=THREE.sRGBEncoding;t.anisotropy=aniso;t.wrapS=THREE.RepeatWrapping;t.repeat.set(1/AD_N,1);sc.t=t;sc.binds.forEach(([m,col])=>{m.material=new THREE.MeshBasicMaterial({map:t,color:col})})});adReady=true}
+function drawAtlas(){const g=adAtlas.getContext('2d');g.fillStyle='#10131a';g.fillRect(0,0,adAtlas.width,AH);adImgs.forEach((im,i)=>{if(im)g.drawImage(im,i*AW,0,AW,AH)});adAtlasTex.needsUpdate=true;if(!adReady&&adImgs.every(Boolean))adMakeScreens()}
+AD_FILES.forEach((f,i)=>{const im=new Image();im.onload=()=>{adImgs[i]=im;drawAtlas()};im.src=f});
+function adTick(t){if(!adReady)return;adScreens.forEach(s=>{const seq=Math.floor(t/AD_PERIOD)+s.ph,u=t%AD_PERIOD,tr=Math.min(1,u/.7),e=1-Math.pow(1-tr,3),pos=((seq-1+e)%AD_N+AD_N)%AD_N;s.t.offset.x=pos/AD_N})}
+// wall of LED boards: one long strip, banners of the right proportions placed one after another in a shuffled order
+function wallAd(off,y0,y1,i0,i1,flip,seed){const h=y1-y0,L=h*AD_R,pos=[],uv=[],idx=[],ord=[0,1,2,3,4,5];let r=seed||1;for(let i=ord.length-1;i>0;i--){r=(r*16807)%2147483647;const j=r%(i+1);[ord[i],ord[j]]=[ord[j],ord[i]]}
+ const eps=.004;let d=0,vi=0;
+ for(let j=0;j<i1-i0;j++){const k=((i0+j)%N+N)%N,k2=(k+1)%N,ds=Math.hypot(S[k2][0]-S[k][0],S[k2][1]-S[k][1]),c=Math.floor((d+ds/2)/L),b=ord[((c%AD_N)+AD_N)%AD_N];
+  let f0=Math.min(1,Math.max(0,(d-c*L)/L)),f1=Math.min(1,Math.max(0,(d+ds-c*L)/L));if(flip){f0=1-f0;f1=1-f1}
+  const u0=(b+eps+f0*(1-2*eps))/AD_N,u1=(b+eps+f1*(1-2*eps))/AD_N;
+  const x0=S[k][0]+NX[k]*off,z0=S[k][1]+NY[k]*off,x1=S[k2][0]+NX[k2]*off,z1=S[k2][1]+NY[k2]*off;
+  pos.push(x0,y0,z0,x0,y1,z0,x1,y0,z1,x1,y1,z1);uv.push(u0,0,u0,1,u1,0,u1,1);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4;d+=ds}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
 
 // ---- sky dome
 function skyMat(gm,top,hor,sunV,night){return new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:top},hor:{value:hor},sun:{value:sunV},night:{value:night},gm:{value:gm},time:{value:0}},
@@ -75,6 +97,7 @@ function dispose(o,keepMaps){o.traverse(q=>{if(q.geometry)q.geometry.dispose();i
 
 // ---- build the circuit
 function build3D(){
+ adScreens.forEach(sc=>{sc.binds.length=0});
  if(world){scene.remove(world);dispose(world)}
  world=new THREE.Group();scene.add(world);
  nightMode=!!TRK.night;
@@ -130,9 +153,9 @@ function build3D(){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
   rlM=mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.62,depthWrite:false,...poly(-2,-6)}),{ro:2});world.add(rlM)}
  // barriers
- {const bM=new THREE.MeshBasicMaterial({map:adTex,side:THREE.DoubleSide,color:nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)}),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
+ {const bM=new THREE.MeshBasicMaterial({map:adAtlasTex,side:THREE.DoubleSide,color:nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)}),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
   // LED boards on the walls: the image is mirrored on the right-hand side unless the length is negated
-  for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wall(o,0,h,s>0?-h*AD_R:h*AD_R,0,N),bM,{cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
+  for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wallAd(o,0,h,0,N,s>0,s>0?7:11),bM,{cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
  // catch fence above the barriers on open circuits
  if(!street){const fT=tex(64,64,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='rgba(215,219,228,1)';g.lineWidth=3;for(let i=0;i<=w;i+=32){g.beginPath();g.moveTo(i,0);g.lineTo(i,h);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(w,i);g.stroke()}}),
    fM=new THREE.MeshBasicMaterial({map:fT,transparent:false,alphaTest:.55,side:THREE.DoubleSide,fog:true});
@@ -141,19 +164,20 @@ function build3D(){
    for(let i=0;i<N;i+=3){dm.position.set(S[i][0]+NX[i]*o,3.25,S[i][1]+NY[i]*o);dm.updateMatrix();posts.setMatrixAt(n++,dm.matrix)}posts.count=n;world.add(posts)}}
  // pedestrian bridge carrying a giant Jumay LED screen on both faces
  {const k=170,p=S[k],q=S[k+1],a=Math.atan2(q[1]-p[1],q[0]-p[0]),half=HW+(WB>14?9:WB+1.8),g=new THREE.Group(),dm=new THREE.MeshStandardMaterial({color:0x2c3038,metalness:.55,roughness:.45}),
-   pw=half*2+1,ph=pw/AD_R,led=new THREE.MeshBasicMaterial({map:adTex,color:nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2)});
+   pw=half*2+1,ph=pw/AD_R,ledCol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2);
   g.position.set(p[0],0,p[1]);g.rotation.y=-a;
   const beam=mesh(new THREE.BoxGeometry(1.2,ph+.8,half*2+3),dm,{cs:1});beam.position.set(0,9.2+ph/2,0);g.add(beam);
   for(const s of[-1,1]){const t=mesh(new THREE.BoxGeometry(1.6,9.2,1.6),dm,{cs:1});t.position.set(0,4.6,s*(half+.6));g.add(t)}
-  for(const f of[-1,1]){const pl=mesh(new THREE.PlaneGeometry(pw,ph),led);pl.position.set(f*.62,9.2+ph/2,0);pl.rotation.y=f*Math.PI/2;g.add(pl)}
+  for(const f of[-1,1]){const pl=mesh(new THREE.PlaneGeometry(pw,ph),adDark);adBind(pl,1,ledCol);pl.position.set(f*.62,9.2+ph/2,0);pl.rotation.y=f*Math.PI/2;g.add(pl)}
   world.add(g)}
  // big videotron screens on posts, facing the track
  {const bw=24,bh=bw/AD_R,pl=new THREE.PlaneGeometry(bw,bh),back=new THREE.BoxGeometry(bw+.5,bh+.5,.3),post=new THREE.CylinderGeometry(.16,.16,6,8),
-   fm=new THREE.MeshBasicMaterial({map:adTex,color:nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2)}),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});let side=1;
-  for(let i=30;i<N-30;i+=48){if(i>N-125||(TRK.tun&&i>TRK.tun[0]-25&&i<TRK.tun[1]+25))continue;side=-side;
+   vcol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});let side=1;
+  let vn=0;const vstep=Math.max(24,Math.round(130/(D[N]/N)));
+  for(let i=30;i<N-30;i+=vstep){if(i>N-125||(TRK.tun&&i>TRK.tun[0]-25&&i<TRK.tun[1]+25))continue;side=-side;
    const o=side*(HW+(WB>14?13:WB+2.4)),k=i,x=S[k][0]+NX[k]*o,z=S[k][1]+NY[k]*o,a=Math.atan2(S[k+1][1]-S[k-1][1],S[k+1][0]-S[k-1][0]),g=new THREE.Group();
    g.position.set(x,0,z);g.rotation.y=-a+(side>0?Math.PI:0);
-   const bk=mesh(back,dk,{cs:1});bk.position.set(0,4.4,0);g.add(bk);const fc=mesh(pl,fm);fc.position.set(0,4.4,.17);g.add(fc);
+   const bk=mesh(back,dk,{cs:1});bk.position.set(0,4.4,0);g.add(bk);const fc=mesh(pl,adDark);adBind(fc,(vn++)%3,vcol);fc.position.set(0,4.4,.17);g.add(fc);
    for(const px of[-8,8]){const q=mesh(post,dk,{cs:1});q.position.set(px,3,-.1);g.add(q)}
    world.add(g)}}
  // tunnel
@@ -411,7 +435,7 @@ function frame(){
  sunL.position.set(c.x+SUN.x*120,SUN.y*120,c.y+SUN.z*120);sunL.target.position.set(c.x,0,c.y);
  headL.intensity=nightMode?3:0;
  if(cock&&tNow-dispAt>.08){dispAt=tNow;updDisp(c,sp*3.6)}
- sky.material.uniforms.time.value=tNow;
+ sky.material.uniforms.time.value=tNow;adTick(tNow);
  renderFrame(CAM==0||state=='menu'?0:Math.min(1,sp/85),nightMode);
 }
 window.draw=function(){frame();drawMini()};
