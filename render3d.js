@@ -61,8 +61,8 @@ function wallAd(off,y0,y1,i0,i1,flip,seed){const h=y1-y0,L=h*AD_R,pos=[],uv=[],a
  let d=0,vi=0;
  for(let j=0;j<i1-i0;j++){const k=((i0+j)%N+N)%N,k2=(k+1)%N,ds=Math.hypot(S[k2][0]-S[k][0],S[k2][1]-S[k][1]),c=Math.floor((d+ds/2)/L),b=ord[((c%AD_N)+AD_N)%AD_N],ph=((c*0.37+(seed||0)*0.13)%1+1)%1;
   let f0=Math.min(1,Math.max(0,(d-c*L)/L)),f1=Math.min(1,Math.max(0,(d+ds-c*L)/L));if(flip){f0=1-f0;f1=1-f1}
-  const x0=S[k][0]+NX[k]*off,z0=S[k][1]+NY[k]*off,x1=S[k2][0]+NX[k2]*off,z1=S[k2][1]+NY[k2]*off;
-  pos.push(x0,y0,z0,x0,y1,z0,x1,y0,z1,x1,y1,z1);uv.push(f0,0,f0,1,f1,0,f1,1);aF.push(f0,f0,f1,f1);aB.push(b,b,b,b);aP.push(ph,ph,ph,ph);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4;d+=ds}
+  const o0=off.call?off(k):off,o1=off.call?off(k2):off,x0=S[k][0]+NX[k]*o0,z0=S[k][1]+NY[k]*o0,x1=S[k2][0]+NX[k2]*o1,z1=S[k2][1]+NY[k2]*o1;
+  const back=(x1-x0)*(S[k2][0]-S[k][0])+(z1-z0)*(S[k2][1]-S[k][1])<=0,X1=back?x0:x1,Z1=back?z0:z1;pos.push(x0,y0,z0,x0,y1,z0,X1,y0,Z1,X1,y1,Z1);uv.push(f0,0,f0,1,f1,0,f1,1);aF.push(f0,f0,f1,f1);aB.push(b,b,b,b);aP.push(ph,ph,ph,ph);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4;d+=ds}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
  g.setAttribute('aF',new THREE.Float32BufferAttribute(aF,1));g.setAttribute('aB',new THREE.Float32BufferAttribute(aB,1));g.setAttribute('aP',new THREE.Float32BufferAttribute(aP,1));g.setIndex(idx);g.computeVertexNormals();return g}
 
@@ -86,12 +86,12 @@ const SUN=V3(Math.cos(-.9)*.62,.74,Math.sin(-.9)*.62).normalize();
 function cum(){const d=[0];for(let i=1;i<=N;i++){const a=S[i-1],b=S[i%N];d.push(d[i-1]+Math.hypot(b[0]-a[0],b[1]-a[1]))}return d}
 function ribbon(o0,o1,y,vs,i0,i1,up){const n=i1-i0,pos=new Float32Array((n+1)*6),uv=new Float32Array((n+1)*4),nr=new Float32Array((n+1)*6),idx=[];let d=0;
  for(let j=0;j<=n;j++){const k=((i0+j)%N+N)%N;if(j){const a=S[((i0+j-1)%N+N)%N],b=S[k];d+=Math.hypot(b[0]-a[0],b[1]-a[1])}
-  const x=S[k][0],z=S[k][1],q=(y.call?y(j):y);pos.set([x+NX[k]*o0,q,z+NY[k]*o0,x+NX[k]*o1,q,z+NY[k]*o1],j*6);uv.set([0,d/vs,1,d/vs],j*4);nr.set([0,1,0,0,1,0],j*6)}
+  const x=S[k][0],z=S[k][1],q=(y.call?y(j):y),f0=o0.call?o0(k):o0,f1=o1.call?o1(k):o1;pos.set([x+NX[k]*f0,q,z+NY[k]*f0,x+NX[k]*f1,q,z+NY[k]*f1],j*6);uv.set([0,d/vs,1,d/vs],j*4);nr.set([0,1,0,0,1,0],j*6)}
  for(let j=0;j<n;j++){const a=j*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setAttribute('normal',new THREE.BufferAttribute(nr,3));g.setIndex(idx);return g}
 function wall(off,y0,y1,vs,i0,i1){const n=i1-i0,pos=new Float32Array((n+1)*6),uv=new Float32Array((n+1)*4),idx=[];let d=0;
  for(let j=0;j<=n;j++){const k=((i0+j)%N+N)%N;if(j){const a=S[((i0+j-1)%N+N)%N],b=S[k];d+=Math.hypot(b[0]-a[0],b[1]-a[1])}
-  const x=S[k][0]+NX[k]*off,z=S[k][1]+NY[k]*off;pos.set([x,y0,z,x,y1,z],j*6);uv.set([d/vs,0,d/vs,1],j*4)}
+  const ov=off.call?off(k):off;let x=S[k][0]+NX[k]*ov,z=S[k][1]+NY[k]*ov;if(j){const pk=((i0+j-1)%N+N)%N;if((x-pos[(j-1)*6])*(S[k][0]-S[pk][0])+(z-pos[(j-1)*6+2])*(S[k][1]-S[pk][1])<=0){x=pos[(j-1)*6];z=pos[(j-1)*6+2]}}pos.set([x,y0,z,x,y1,z],j*6);uv.set([d/vs,0,d/vs,1],j*4)}
  for(let j=0;j<n;j++){const a=j*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
 function mesh(g,m,o){const q=new THREE.Mesh(g,m);if(o){if(o.rs)q.receiveShadow=true;if(o.cs)q.castShadow=true;if(o.ro!=null)q.renderOrder=o.ro}return q}
@@ -124,7 +124,7 @@ function build3D(){
  world.add(mesh(ribbon(-HW,HW,.02,16,0,N),asM,{rs:1}));
  // run-off strips
  const roT=street?mk.asphalt(TRK.as[1],false):mk.plain(TRK.gv[0],[TRK.gv[1],'#fff','#6b5d3c','#8d7e58'],8000),roM=new THREE.MeshStandardMaterial({map:roT,roughness:1,color:nightMode?0x8890a8:0xffffff}),rw=Math.min(WB,street?WB:11);
- for(const s of[-1,1]){const a=s*HW,b=s*(HW+rw);world.add(mesh(ribbon(s>0?a:b,s>0?b:a,.012,street?16:7,0,N),roM,{rs:1}))}
+ for(const s of[-1,1]){const far=k=>s*Math.min(WD[k],HW+rw),near=()=>s*HW;world.add(mesh(ribbon(s>0?near:far,s>0?far:near,.012,street?16:7,0,N),roM,{rs:1}))}
  // kerbs on the inside of corners
  {const kT=mk.kerb(),pos=[],uv=[],idx=[];let vi=0;
   const cr=i=>{const A=S[(i+N-3)%N],B=S[i],Cc=S[(i+3)%N],ax=B[0]-A[0],ay=B[1]-A[1],bx=Cc[0]-B[0],by=Cc[1]-B[1];return(ax*by-ay*bx)/((Math.hypot(ax,ay)*Math.hypot(bx,by))||1)};
@@ -159,15 +159,15 @@ function build3D(){
  // barriers
  {const bM=adMaterial(nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
   // LED boards on the walls: the image is mirrored on the right-hand side unless the length is negated
-  for(const s of[-1,1]){const o=s*(HW+WB);world.add(mesh(wallAd(o,0,h,0,N,s>0,s>0?7:11),bM,{cs:1}));world.add(mesh(ribbon(o-.2,o+.2,h,1e5,0,N),cap,{rs:1}))}}
+  for(const s of[-1,1]){const o=k=>s*WD[k];world.add(mesh(wallAd(o,0,h,0,N,s>0,s>0?7:11),bM,{cs:1}));world.add(mesh(ribbon(k=>o(k)-.2,k=>o(k)+.2,h,1e5,0,N),cap,{rs:1}))}}
  // catch fence above the barriers on open circuits
  if(!street){const fT=tex(64,64,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='rgba(215,219,228,1)';g.lineWidth=3;for(let i=0;i<=w;i+=32){g.beginPath();g.moveTo(i,0);g.lineTo(i,h);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(w,i);g.stroke()}}),
    fM=new THREE.MeshBasicMaterial({map:fT,transparent:false,alphaTest:.55,side:THREE.DoubleSide,fog:true});
-  for(const s of[-1,1]){const o=s*(HW+WB);const g=wall(o,1.1,4.6,5,0,N);world.add(mesh(g,fM));
+  for(const s of[-1,1]){const o=k=>s*WD[k];const g=wall(o,1.1,4.6,5,0,N);world.add(mesh(g,fM));
    const posts=new THREE.InstancedMesh(new THREE.BoxGeometry(.18,4.3,.18),new THREE.MeshStandardMaterial({color:0x6d727c,metalness:.6,roughness:.5}),Math.ceil(N/3)),dm=new THREE.Object3D();let n=0;
-   for(let i=0;i<N;i+=3){dm.position.set(S[i][0]+NX[i]*o,3.25,S[i][1]+NY[i]*o);dm.updateMatrix();posts.setMatrixAt(n++,dm.matrix)}posts.count=n;world.add(posts)}}
+   for(let i=0;i<N;i+=3){dm.position.set(S[i][0]+NX[i]*o(i),3.25,S[i][1]+NY[i]*o(i));dm.updateMatrix();posts.setMatrixAt(n++,dm.matrix)}posts.count=n;world.add(posts)}}
  // pedestrian bridge carrying a giant Jumay LED screen on both faces
- {const k=170,p=S[k],q=S[k+1],a=Math.atan2(q[1]-p[1],q[0]-p[0]),half=HW+(WB>14?9:WB+1.8),g=new THREE.Group(),dm=new THREE.MeshStandardMaterial({color:0x2c3038,metalness:.55,roughness:.45}),
+ {const k=170,p=S[k],q=S[k+1],a=Math.atan2(q[1]-p[1],q[0]-p[0]),half=HW+Math.min(WB>14?9:WB+1.8,WD[170]-HW-1.5),g=new THREE.Group(),dm=new THREE.MeshStandardMaterial({color:0x2c3038,metalness:.55,roughness:.45}),
    pw=half*2+1,ph=pw/AD_R,ledCol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2);
   g.position.set(p[0],0,p[1]);g.rotation.y=-a;
   const beam=mesh(new THREE.BoxGeometry(1.2,ph+.8,half*2+3),dm,{cs:1});beam.position.set(0,9.2+ph/2,0);g.add(beam);
@@ -180,7 +180,7 @@ function build3D(){
    vcol=nightMode?C(0xffffff).multiplyScalar(2):C(0xffffff).multiplyScalar(1.2),dk=new THREE.MeshStandardMaterial({color:0x15171c,roughness:.6});
   const avg=D[N]/N,vstep=Math.max(24,Math.round(130/avg)),dist=(ax,az,bx,bz)=>Math.hypot(ax-bx,az-bz),reach=HW+WB+(bw/2+6),bridge=S[170];
   const placed=[];let want=-1,vn=0;
-  const clear=(i,sd)=>{const o=sd*(HW+(WB>14?13:WB+2.4)),x=S[i][0]+NX[i]*o,z=S[i][1]+NY[i]*o;
+  const clear=(i,sd)=>{const o=sd*(HW+(WB>14?13:WB+2.4)),x=S[i][0]+NX[i]*o,z=S[i][1]+NY[i]*o;let wmin=1e9;for(let j=-30;j<=30;j++)wmin=Math.min(wmin,WD[(i+j+N)%N]);if(wmin<Math.abs(o)+3&&WB>14)return null;
    if(dist(x,z,bridge[0],bridge[1])<48)return null;
    for(const q of placed)if(dist(x,z,q.x,q.z)<bw+10)return null;
    // the far side of the circuit: any part of the track more than 150 samples away along the lap must stay out of the footprint

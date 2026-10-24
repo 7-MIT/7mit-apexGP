@@ -190,15 +190,23 @@ const TH=[
 TRACKS.forEach((t,i)=>Object.assign(t,TH[i]));
 if(window.REAL_TRACKS)REAL_TRACKS.forEach(t=>TRACKS.push(t));
 let TI=Math.max(0,TRACKS.findIndex(t=>t.real));try{const sv=localStorage.getItem('apexgp_track');if(sv!=null)TI=+sv}catch(e){}if(!TRACKS[TI])TI=Math.max(0,TRACKS.findIndex(t=>t.real));
-let TRK=TRACKS[TI],CP=TRK.cp,S,N,P,X0,X1,Y0,Y1,MS,TREES,CR,BL,BR,ASPH,NZ,NX,NY,RO,RX,RY,RC,RUNS,V,DS,B1,B2,DZ,DM,TUN,RL=true;const skids=[],parts=[],AD=['#d71920','#0a3d91','#ffd100','#ffffff','#15151a','#00a19b','#6f2da8','#ff7a00'];
+let WD,TRK=TRACKS[TI],CP=TRK.cp,S,N,P,X0,X1,Y0,Y1,MS,TREES,CR,BL,BR,ASPH,NZ,NX,NY,RO,RX,RY,RC,RUNS,V,DS,B1,B2,DZ,DM,TUN,RL=true;const skids=[],parts=[],AD=['#d71920','#0a3d91','#ffd100','#ffffff','#15151a','#00a19b','#6f2da8','#ff7a00'];
 function buildA(){S=[];
 for(let i=0;i<CP.length;i++){const p0=CP[(i+CP.length-1)%CP.length],p1=CP[i],p2=CP[(i+1)%CP.length],p3=CP[(i+2)%CP.length];
 for(let k=0;k<SEG;k++){const t=k/SEG,t2=t*t,t3=t2*t;
 S.push([0,1].map(d=>.5*(2*p1[d]+(p2[d]-p0[d])*t+(2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*t2+(3*p1[d]-p0[d]-3*p2[d]+p3[d])*t3)))}}
 if(TRK.real){const c=[0];for(let i=1;i<=S.length;i++){const a=S[i-1],b=S[i%S.length];c.push(c[i-1]+Math.hypot(b[0]-a[0],b[1]-a[1]))}
  const L=c[S.length],n=Math.round(L/2),R=[];let j=0;for(let q=0;q<n;q++){const t=q*L/n;while(c[j+1]<t)j++;const f=(t-c[j])/(c[j+1]-c[j]||1),a=S[j],b=S[(j+1)%S.length];R.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f])}
+ {const n=R.length;for(let pass=0;pass<6;pass++){const T=R.map(q=>q.slice());for(let i=0;i<n;i++){let sx=0,sy=0;for(let j=-4;j<=4;j++){const q=R[(i+j+n)%n];sx+=q[0];sy+=q[1]}T[i]=[sx/9,sy/9]}for(let i=0;i<n;i++)R[i]=T[i]}} // remove the kinks left by the simplified control points
  S=R;TRK.drs=TRK.drsF.map(z=>[Math.max(2,Math.round(z[0]*R.length)),Math.min(R.length-3,Math.round(z[1]*R.length))]).filter(z=>z[1]-z[0]>20)}
 N=S.length;P=new Path2D();
+// Distance from the centreline to the barrier at every sample. A barrier offset by more than the local bend radius folds back
+// across the track (this happened in the Monza chicanes), so on tight bends it is pulled in to stay inside the radius.
+{const R=new Float32Array(N),K=8,top=HW+(TRK.wb||26);
+ for(let i=0;i<N;i++){const a=S[(i+N-K)%N],b=S[i],c=S[(i+K)%N],la=Math.hypot(b[0]-a[0],b[1]-a[1]),lb=Math.hypot(c[0]-b[0],c[1]-b[1]),lc=Math.hypot(c[0]-a[0],c[1]-a[1]),ar=Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]));R[i]=ar<1e-6?1e5:la*lb*lc/(2*ar)}
+ const lim=new Float32Array(N);for(let i=0;i<N;i++){let mn=1e5;for(let j=-30;j<=30;j++)mn=Math.min(mn,R[(i+j+N)%N]);lim[i]=Math.max(HW+2.2,Math.min(top,mn*.85))}
+ WD=new Float32Array(N);for(let i=0;i<N;i++){let s=0;for(let j=-14;j<=14;j++)s+=lim[(i+j+N)%N];WD[i]=Math.min(lim[i]<top?lim[i]:top,s/29+.001)}
+ for(let i=0;i<N;i++)WD[i]=Math.max(HW+2.2,Math.min(WD[i],top))}
 S.forEach((p,i)=>i?P.lineTo(p[0],p[1]):P.moveTo(p[0],p[1]));P.closePath();
 let TL=0;for(let i=0;i<N;i++){const a=S[i],b=S[(i+1)%N];TL+=Math.hypot(b[0]-a[0],b[1]-a[1])}
 $('len').textContent=(TL/1000).toFixed(1);
@@ -327,7 +335,7 @@ if(skids.length>2600)skids.splice(0,300);
 if(((off&&vf>10)||Math.abs(vl)>4)&&Math.random()<.6&&parts.length<260)parts.push({x:w[0],y:w[1],vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,l:1,k:off?0:1});
 for(const q of parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.l-=dt*1.1}
 while(parts.length&&parts[0].l<=0)parts.shift()}
-if(n.d>HW+(TRK.wb||26)){const p=S[n.i],dx=p[0]-c.x,dy=p[1]-c.y,l=Math.hypot(dx,dy)||1,o=n.d-HW-(TRK.wb||26);c.x+=dx/l*o;c.y+=dy/l*o;c.vx*=.85;c.vy*=.85;clean=false}
+if(n.d>WD[n.i]){const p=S[n.i],dx=p[0]-c.x,dy=p[1]-c.y,l=Math.hypot(dx,dy)||1,o=n.d-WD[n.i];c.x+=dx/l*o;c.y+=dy/l*o;c.vx*=.85;c.vy*=.85;clean=false}
 else if(off&&racing&&lapStart!=null)clean=false;
 if(!racing)return;
 clk+=dt;tw=Math.min(1,tw+dt*SET.wear*TCS[TCi].w*(.0004+.0008*Math.min(1,Math.abs(c.st)*Math.abs(vf)/60)+.0005*c.br));
