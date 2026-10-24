@@ -118,7 +118,7 @@ function build3D(){
  sunL.color.set(nightMode?0x7f93d8:0xfff1d6);sunL.intensity=nightMode?.5:2.0;
  // ground
  const GW=Math.max(X1-X0,Y1-Y0)+2400,gT=mk.grass();gT.repeat.set(GW/22,GW/22);
- const gnd=mesh(new THREE.PlaneGeometry(GW,GW),new THREE.MeshStandardMaterial({map:gT,roughness:1,metalness:0,bumpMap:gT,bumpScale:2.5,color:nightMode?0x6b7694:0xffffff}),{rs:1});gnd.rotation.x=-Math.PI/2;gnd.position.set((X0+X1)/2,-.02,(Y0+Y1)/2);world.add(gnd);
+ const gnd=mesh(new THREE.PlaneGeometry(GW,GW),new THREE.MeshStandardMaterial({map:gT,roughness:1,metalness:0,bumpMap:gT,bumpScale:2.5,color:nightMode?0x6b7694:0xffffff}),{rs:1});gnd.rotation.x=-Math.PI/2;gnd.position.set((X0+X1)/2,-.35,(Y0+Y1)/2);world.add(gnd);
  // asphalt
  const asT=mk.asphalt(TRK.as[0],true),asM=new THREE.MeshStandardMaterial({map:asT,bumpMap:asT,bumpScale:1.6,roughness:.86,metalness:0,color:nightMode?0x9aa3c0:0xffffff});
  world.add(mesh(ribbon(-HW,HW,.02,16,0,N),asM,{rs:1}));
@@ -136,7 +136,7 @@ function build3D(){
    world.add(mesh(g,new THREE.MeshStandardMaterial({map:kT,roughness:.7,side:THREE.DoubleSide,color:nightMode?0x9aa3c0:0xffffff}),{rs:1}))}}
  // start / finish line and gantry
  {const p=S[0],q=S[1],a=Math.atan2(q[1]-p[1],q[0]-p[0]),cT=mk.checker();cT.repeat.set(1,1);
-  const ln=mesh(new THREE.PlaneGeometry(1.8,HW*2),new THREE.MeshBasicMaterial({map:cT,...poly(-2,-8)}));ln.rotation.x=-Math.PI/2;
+  const ln=mesh(new THREE.PlaneGeometry(1.8,HW*2),new THREE.MeshBasicMaterial({map:cT}));ln.rotation.x=-Math.PI/2;
   const lg=new THREE.Group();lg.position.set(p[0],.05,p[1]);lg.rotation.y=-a;lg.add(ln);world.add(lg);
   const gr=new THREE.Group(),gm=new THREE.MeshStandardMaterial({color:0x2a2d35,metalness:.6,roughness:.4});gr.position.set(S[3][0],0,S[3][1]);gr.rotation.y=-a;
   for(const s of[-1,1]){const c=mesh(new THREE.BoxGeometry(.8,8,.8),gm,{cs:1});c.position.set(0,4,s*(HW+1.6));gr.add(c)}
@@ -148,14 +148,14 @@ function build3D(){
    const sb=mesh(new THREE.BoxGeometry(.3,1.8,HW*2+3.2),gm,{cs:1});sb.position.set(-.45,9.7,0);gr.add(sb)}
   window.gantryLamps=[];for(let k=0;k<5;k++){const m=new THREE.MeshBasicMaterial({color:0x2a0808}),b=mesh(new THREE.SphereGeometry(.42,12,8),m);b.position.set(-.75,8,(k-2)*2.1);gr.add(b);window.gantryLamps.push(m)}
   world.add(gr)}
- // DRS zones
- {const gm=new THREE.MeshBasicMaterial({color:0x2ee66b,transparent:true,opacity:.7,depthWrite:false,...poly(-1,-4)});
-  for(const[a,b]of TRK.drs){for(const[o0,o1]of[[-.4,.4],[-HW+.5,-HW+1.1],[HW-1.1,HW-.5]])world.add(mesh(ribbon(o0,o1,.055,1e5,a,b),gm,{ro:1}));
-   for(const e of[a,b])world.add(mesh(ribbon(-HW,HW,.056,1e5,e,e+1),gm,{ro:1}))}}
+ // DRS zones: two thin green lines along the inside of the track edges, with a short tick at each end of the zone
+ {const gm=new THREE.MeshBasicMaterial({color:0x2ee66b,transparent:true,opacity:.55,depthWrite:false});
+  for(const[a,b]of TRK.drs){for(const[o0,o1]of[[-HW+.3,-HW+.7],[HW-.7,HW-.3]])world.add(mesh(ribbon(o0,o1,.055,1e5,a,b),gm,{ro:1}));
+   for(const e of[a,b])for(const[o0,o1]of[[-HW+.3,-HW+1.9],[HW-1.9,HW-.3]])world.add(mesh(ribbon(o0,o1,.056,1e5,e,e+1),gm,{ro:1}))}}
  // racing line
- {const pos=[],col=[],idx=[];let vi=0;for(let i=0;i<N;i++){const j=(i+1)%N,c=C(RC[i]),p=(q,o)=>[S[q][0]+NX[q]*(RO[q]+o),.06,S[q][1]+NY[q]*(RO[q]+o)];pos.push(...p(i,-.45),...p(i,.45),...p(j,-.45),...p(j,.45));for(let k=0;k<4;k++)col.push(c.r,c.g,c.b);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4}
+ {const pos=[],col=[],idx=[];let vi=0;for(let i=0;i<N;i++){const j=(i+1)%N,c=C(RC[i]),p=(q,o)=>[S[q][0]+NX[q]*(RO[q]+o),.06,S[q][1]+NY[q]*(RO[q]+o)];pos.push(...p(i,-.35),...p(i,.35),...p(j,-.35),...p(j,.35));for(let k=0;k<4;k++)col.push(c.r,c.g,c.b);idx.push(vi,vi+1,vi+2,vi+1,vi+3,vi+2);vi+=4}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);
-  rlM=mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.62,depthWrite:false,...poly(-2,-6)}),{ro:2});world.add(rlM)}
+  rlM=mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.5,depthWrite:false}),{ro:2});world.add(rlM)}
  // barriers
  {const bM=adMaterial(nightMode?C(0xffffff).multiplyScalar(1.9):C(0xffffff).multiplyScalar(1.15)),h=street?1.4:1.1,cap=new THREE.MeshStandardMaterial({color:0xb9bdc6,roughness:.5});
   // LED boards on the walls: the image is mirrored on the right-hand side unless the length is negated
@@ -222,13 +222,13 @@ function build3D(){
   const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));const st=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,fog:false}));world.add(st);
   const L=[];for(let i=0;i<N;i+=10)for(const s of[-1,1])L.push([S[i][0]+NX[i]*s*(HW+WB+1),S[i][1]+NY[i]*s*(HW+WB+1),S[i][0]+NX[i]*s*(HW-3),S[i][1]+NY[i]*s*(HW-3)]);
   const pole=new THREE.InstancedMesh(new THREE.CylinderGeometry(.12,.16,10,6),new THREE.MeshStandardMaterial({color:0x2a2d35}),L.length),bulb=new THREE.InstancedMesh(new THREE.SphereGeometry(.45,8,6),new THREE.MeshBasicMaterial({color:0xfff0c0}),L.length),
-   pool=new THREE.InstancedMesh(new THREE.PlaneGeometry(26,26),new THREE.MeshBasicMaterial({map:mk.glow(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.4,...poly(-3,-10)}),L.length),dm=new THREE.Object3D();
+   pool=new THREE.InstancedMesh(new THREE.PlaneGeometry(26,26),new THREE.MeshBasicMaterial({map:mk.glow(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.4}),L.length),dm=new THREE.Object3D();
   L.forEach((l,i)=>{dm.rotation.set(0,0,0);dm.scale.set(1,1,1);dm.position.set(l[0],5,l[1]);dm.updateMatrix();pole.setMatrixAt(i,dm.matrix);dm.position.set(l[0],10.1,l[1]);dm.updateMatrix();bulb.setMatrixAt(i,dm.matrix);dm.rotation.set(-Math.PI/2,0,0);dm.position.set(l[2],.07,l[3]);dm.updateMatrix();pool.setMatrixAt(i,dm.matrix)});
   pool.renderOrder=3;world.add(pole,bulb,pool)}
  // dynamic: skid marks and smoke
  skidG=new THREE.BufferGeometry();skidG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(5600*4*3),3));
  {const idx=[];for(let i=0;i<5600;i++){const a=i*4;idx.push(a,a+1,a+2,a+1,a+3,a+2)}skidG.setIndex(idx);skidG.setDrawRange(0,0)}
- skidM=mesh(skidG,new THREE.MeshBasicMaterial({color:0x050506,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,...poly(-2,-5)}),{ro:2});skidM.frustumCulled=false;world.add(skidM);
+ skidM=mesh(skidG,new THREE.MeshBasicMaterial({color:0x050506,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide}),{ro:2});skidM.frustumCulled=false;world.add(skidM);
  partG=new THREE.BufferGeometry();partG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(300*3),3));partG.setAttribute('aC',new THREE.BufferAttribute(new Float32Array(300*4),4));partG.setAttribute('aS',new THREE.BufferAttribute(new Float32Array(300),1));
  partP=new THREE.Points(partG,new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{sc:{value:600}},vertexShader:'attribute vec4 aC;attribute float aS;uniform float sc;varying vec4 vC;void main(){vC=aC;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=aS*sc/-mv.z;gl_Position=projectionMatrix*mv;}',fragmentShader:'varying vec4 vC;void main(){float d=length(gl_PointCoord-.5)*2.;float a=smoothstep(1.,.2,d)*vC.a;gl_FragColor=vec4(vC.rgb,a);}'}));partP.frustumCulled=false;world.add(partP);
  carKey='';camInit=false;
@@ -377,7 +377,7 @@ function mkPost(){
  const opt={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false};
  const quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2)),oc=new THREE.OrthographicCamera(-1,1,1,-1,0,1),V='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
  const mat=f=>new THREE.ShaderMaterial({vertexShader:V,fragmentShader:f.f,uniforms:f.u,depthTest:false,depthWrite:false});
- const rtS=new THREE.WebGLRenderTarget(w,h,Object.assign({samples:4,depthBuffer:true},opt)),rtA=new THREE.WebGLRenderTarget(w>>2,h>>2,opt),rtB=new THREE.WebGLRenderTarget(w>>2,h>>2,opt);
+ const rtS=new THREE.WebGLRenderTarget(w,h,Object.assign({},opt,{samples:4,depthBuffer:true})),rtA=new THREE.WebGLRenderTarget(w>>2,h>>2,opt),rtB=new THREE.WebGLRenderTarget(w>>2,h>>2,opt);
  const bright=mat({u:{t:{value:null}},f:'uniform sampler2D t;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv).rgb;float l=max(max(c.r,c.g),c.b);gl_FragColor=vec4(c*max(l-1.,0.)/max(l,1e-4),1.);}'});
  const blur=mat({u:{t:{value:null},d:{value:new THREE.Vector2()}},f:'uniform sampler2D t;uniform vec2 d;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv).rgb*.227;c+=(texture2D(t,vUv+d*1.38).rgb+texture2D(t,vUv-d*1.38).rgb)*.316;c+=(texture2D(t,vUv+d*3.23).rgb+texture2D(t,vUv-d*3.23).rgb)*.07;gl_FragColor=vec4(c,1.);}'});
  const comp=mat({u:{ts:{value:rtS.texture},tb:{value:rtB.texture},time:{value:0},spd:{value:0},expo:{value:1},res:{value:new THREE.Vector2(w,h)},vig:{value:.5}},
@@ -443,7 +443,7 @@ function frame(){
   else if(CAM==2){const ca=c.a+c.st*SET.lta*.22*Math.min(1,sp/40),cc=Math.cos(ca),ss=Math.sin(ca),m=SET.shk*.012*(Math.min(1,sp/80)+(Math.abs(c.vl||0)>3?1.2:0)+(c.off?1.5:0));
    camera.position.set(c.x+fc*.12+(Math.random()-.5)*m*-fs,.97+(Math.random()-.5)*m,c.y+fs*.12+(Math.random()-.5)*m*fc);camera.lookAt(camera.position.x+cc*10,.9+pitch*-6,camera.position.z+ss*10);camera.rotateZ(-c.st*.02*Math.min(1,sp/40));vfov=Math.min(110,Math.max(35,vfov))}
   else{const m=SET.shk*.01*Math.min(1,sp/80);camera.position.set(c.x-fc*.9+(Math.random()-.5)*m,1.55+(Math.random()-.5)*m,c.y-fs*.9+(Math.random()-.5)*m);camera.lookAt(c.x+fc*30,.9,c.y+fs*30);camera.rotateZ(-c.st*.02*Math.min(1,sp/40));vfov=Math.min(95,Math.max(40,vfov))}}
- camera.near=cock?.1:.3;camera.fov=vfov;camera.updateProjectionMatrix();
+ camera.near=cock?.15:.6;camera.fov=vfov;camera.updateProjectionMatrix();
  sky.position.copy(camera.position);
  // light follows the car
  sunL.position.set(c.x+SUN.x*120,SUN.y*120,c.y+SUN.z*120);sunL.target.position.set(c.x,0,c.y);
